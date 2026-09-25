@@ -7,6 +7,9 @@ Twice a day, at 11:11 exactly, customers can leave a wish for brands to grant.
 This is the MVP built for brand onboarding demos — no marketing site, no
 explainer copy, just the four screens a brand needs to see working.
 
+Working context — why things are the way they are, what's verified, and
+what's still open — is in [HANDOFF.md](HANDOFF.md).
+
 ## The rules the product runs on
 
 - **A bid buys visibility, never odds.** Position on the board is purely the
