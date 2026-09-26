@@ -206,6 +206,13 @@ ok("clicks: rejects a bad brand id", bad.status === 400);
 const good = await call("/api/brands/click", { method: "POST", body: { brandId: b1.data.brandId } });
 ok("clicks: counts a tile open", good.status === 200 && good.data.ok);
 
+// ---------------------------------------------------------------- junk cookie
+console.log("\n-- a cookie we didn't issue");
+for (const junk of ["not-a-uuid", "abc123", "'; drop table users; --"]) {
+  const res = await fetch(BASE + "/", { headers: { Cookie: `bg_session=${encodeURIComponent(junk)}` } });
+  ok(`cookie: ${JSON.stringify(junk).slice(0, 22)} reads as signed out, not a 500`, res.status === 200, String(res.status));
+}
+
 // ---------------------------------------------------------------- pages
 console.log("\n-- pages render");
 for (const path of ["/", "/login", "/brand", "/rewards", "/wish"]) {
