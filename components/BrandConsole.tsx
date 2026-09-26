@@ -149,7 +149,9 @@ export function BrandConsole({
       {/* ------------------------------------------------- listing */}
       <section className="card p-6">
         <h2 className="text-[17px] font-semibold">Your listing</h2>
-        <p className="mt-1 text-[13px] text-ink-soft">This is what a customer sees when they tap your tile.</p>
+        <p className="mt-1 text-[13px] text-ink-soft">
+          This is what a customer sees when they tap your tile. Keep it about the brand, not a branch.
+        </p>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Brand name" className="sm:col-span-2">
@@ -187,12 +189,12 @@ export function BrandConsole({
             />
           </Field>
 
-          <Field label="Area">
+          <Field label="Where you reach people">
             <input
               className="input"
               value={form.area}
               onChange={(e) => set("area", e.target.value)}
-              placeholder="Indiranagar, Bengaluru"
+              placeholder="Online · pan-India"
             />
           </Field>
           <Field label="Website">

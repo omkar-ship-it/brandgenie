@@ -41,7 +41,7 @@ export default async function BoardPage() {
           <h1 className="text-[26px] font-semibold">The Board</h1>
           <p className="mt-1 max-w-[52ch] text-[13.5px] text-ink-soft">
             {BOARD_SIZE} places, ranked purely by what each brand bid. The genie walks it once a day and whoever he
-            stops on hands you a reward.
+            stops on hands you a reward. One board, every brand, wherever you are.
           </p>
         </div>
         <div className="flex gap-5 text-right">

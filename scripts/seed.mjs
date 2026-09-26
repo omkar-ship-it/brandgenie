@@ -1,9 +1,11 @@
 /**
  * Fills the board with demo brands so the walk has somewhere to go.
  *
- * The names are invented and the links point at the reserved `.example` TLD
- * on purpose — a real shop's name and Instagram on a live board would imply
- * they'd signed up when they haven't.
+ * These are generic campaign brands, not neighbourhood shops — the board is
+ * pitched at brands running a national campaign, so nothing here is tied to a
+ * locality. Every name is invented and the links point at the reserved
+ * `.example` TLD on purpose: a real brand's name and Instagram on a live
+ * board would imply they'd signed up when they haven't.
  *
  *   npm run db:seed          # add missing brands
  *   npm run db:seed -- wipe  # clear demo brands first
@@ -11,26 +13,26 @@
 import { Client } from "pg";
 
 const BRANDS = [
-  ["Kettle & Kin", "Food & Beverage", "Slow-roasted beans, poured to order", "Indiranagar", "Free cappuccino", "☕", 4200],
-  ["Sunday Dough", "Food & Beverage", "Sourdough out of the oven at 7am", "Koramangala", "A loaf on us", "🍞", 3800],
-  ["Curl & Comb", "Beauty & Wellness", "Cuts that grow out well", "Jayanagar", "₹500 off any cut", "💇", 3500],
-  ["Iron Yard", "Fitness", "Barbells, chalk, no mirrors", "HSR Layout", "One week free", "🏋️", 3100],
-  ["Loom Street", "Shopping", "Handwoven cotton, six weavers", "Malleshwaram", "20% off one piece", "🧵", 2900],
-  ["The Reel Room", "Entertainment", "Two screens, one projectionist", "Frazer Town", "Two tickets free", "🎬", 2600],
-  ["Saltwater Trails", "Travel", "Weekend treks with actual guides", "Bengaluru", "₹1000 off a trek", "🥾", 2400],
-  ["Pao Bhaji Co", "Food & Beverage", "Butter is not optional", "BTM Layout", "Free plate of pao bhaji", "🍛", 2200],
-  ["Glow Lab", "Beauty & Wellness", "Facials, no upselling", "Whitefield", "Free clean-up", "✨", 2000],
-  ["Cadence Cycles", "Fitness", "Service while you wait", "Ulsoor", "Free bike service", "🚲", 1800],
-  ["Paper & Pine", "Shopping", "Notebooks that lie flat", "Basavanagudi", "Free pocket notebook", "📓", 1600],
-  ["Second Spin", "Entertainment", "Vinyl, mostly Indian jazz", "Shivajinagar", "₹300 off any record", "🎵", 1400],
-  ["Hill & Halt", "Travel", "Homestays, four rooms each", "Coorg", "₹1500 off a night", "🏡", 1200],
-  ["Tiffin Tales", "Food & Beverage", "Lunch dabbas, no plastic", "Rajajinagar", "A week of lunch free", "🍱", 1000],
-  ["Stretch Studio", "Fitness", "Mat work for desk-bound backs", "Domlur", "Three classes free", "🧘", 1100],
-  ["Bloom Cart", "Shopping", "Flowers from the Hosur road farms", "Sadashivanagar", "A free bunch", "💐", 1000],
-  ["The Chai Bench", "Food & Beverage", "One bench, endless cutting chai", "Majestic", "Chai for two, free", "🫖", 900],
-  ["Clay & Kiln", "Entertainment", "Pottery for people with no talent", "Hebbal", "A free wheel session", "🏺", 800],
-  ["Sole Mender", "Shopping", "Your shoes, resurrected", "Chickpet", "Free resoling", "👞", 700],
-  ["Quiet Hours Spa", "Beauty & Wellness", "Phones stay in the locker", "Richmond Town", "₹800 off a massage", "💆", 600],
+  ["Perch Coffee", "Food & Beverage", "Cold brew, delivered fortnightly", "Online · ships nationwide", "₹200 off your first box", "☕", 4200],
+  ["Lumen Skincare", "Beauty & Wellness", "Six products, no ten-step routine", "Online", "Free 3-step starter set", "✨", 3800],
+  ["Ironclad Fitness", "Fitness", "Strength programmes that fit a lunch break", "App · pan-India", "One month free", "🏋️", 3500],
+  ["Weft & Warp", "Shopping", "Handloom, made to order", "Online · 12 stores", "25% off your first order", "🧵", 3100],
+  ["Reel & Row", "Entertainment", "Independent cinema, streamed", "Streaming · pan-India", "3 months on us", "🎬", 2900],
+  ["Slow Miles", "Travel", "Small-group trips, no coaches", "Pan-India", "₹2000 off any trip", "🥾", 2600],
+  ["Batch No. 9", "Food & Beverage", "Small-batch bakes, shipped cold", "Online", "A free first box", "🍞", 2400],
+  ["Halo Wellness", "Beauty & Wellness", "Therapists, booked in two taps", "App · 40 cities", "First session free", "💆", 2200],
+  ["Pace Athletics", "Fitness", "Running shoes fitted by gait, online", "Online", "Flat ₹1500 off", "👟", 2000],
+  ["Paperbound", "Shopping", "Notebooks that actually lie flat", "Online", "Free pocket notebook", "📓", 1800],
+  ["Vinyl Vault", "Entertainment", "Records, curated monthly", "Subscription · pan-India", "₹500 off a subscription", "🎵", 1600],
+  ["Altitude Stays", "Travel", "Hill homestays, four rooms each", "Pan-India", "₹1500 off a night", "🏡", 1400],
+  ["The Daily Pour", "Food & Beverage", "Tea, sourced single-estate", "Online", "A free sampler set", "🫖", 1200],
+  ["Studio Forty", "Fitness", "Forty-minute classes, live", "Online classes", "Two weeks free", "🧘", 1100],
+  ["Highline Goods", "Shopping", "Everyday carry, built to last", "Online", "20% off anything", "🎒", 1000],
+  ["Verdant Apothecary", "Beauty & Wellness", "Plant-based, refillable", "Online · 20 stores", "Free refill pouch", "🌿", 900],
+  ["Encore Live", "Entertainment", "Gigs, without the booking fee", "Pan-India", "Two tickets free", "🎫", 800],
+  ["Salt & Ember", "Food & Beverage", "Meal kits for people who can cook", "Online · 8 cities", "First kit free", "🍲", 700],
+  ["Compass & Co", "Travel", "Weekend itineraries, planned for you", "Online", "A free itinerary", "🧭", 600],
+  ["Loop Rentals", "Shopping", "Rent the things you'd use twice", "App · 15 cities", "First rental free", "🔁", 500],
 ];
 
 const url = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
@@ -101,12 +103,12 @@ for (const [i, [name, category, tagline, area, reward, icon, rupees]] of BRANDS.
 
 // A few wishes so the wish page has something to show between windows.
 const WISHES = [
-  ["A filter coffee that doesn't cost ₹300", "Food & Beverage"],
-  ["Someone to fix my bike chain without a lecture", "Fitness"],
-  ["A haircut where they actually listen", "Beauty & Wellness"],
-  ["One good pair of monsoon shoes", "Shopping"],
-  ["A Sunday matinee with nobody on their phone", "Entertainment"],
-  ["A quiet place in Coorg for two nights", "Travel"],
+  ["A coffee subscription that doesn't cost a fortune", "Food & Beverage"],
+  ["Running shoes that actually suit my gait", "Fitness"],
+  ["Skincare that doesn't need a ten-step routine", "Beauty & Wellness"],
+  ["One good bag that lasts a decade", "Shopping"],
+  ["A film night with no booking fee", "Entertainment"],
+  ["Two quiet nights somewhere with hills", "Travel"],
 ];
 
 const { rows: wishUser } = await client.query(
