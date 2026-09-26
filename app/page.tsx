@@ -4,7 +4,7 @@ import { db, hasDb } from "@/lib/db";
 import { plays } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getBoard } from "@/lib/board";
-import { BOARD_SIZE, dayKey, genieStart, rupees } from "@/lib/rules";
+import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, dayKey, genieStart, rupees } from "@/lib/rules";
 import { Board } from "@/components/Board";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +27,12 @@ export default async function BoardPage() {
   const bidHref = isMerchant ? "/brand" : "/login?next=/brand&as=merchant";
   const topBid = board[0]?.bidPaise ?? 0;
   const stock = board.reduce((sum, e) => sum + e.remaining, 0);
+  const openPlaces = BOARD_SIZE - board.length;
+  // What it actually costs to get on: the floor while there's room, one step
+  // over the cheapest brand once the board is full and you have to displace one.
+  const entryPaise = openPlaces > 0
+    ? BID_BASE_PAISE
+    : Math.max(BID_BASE_PAISE, (board.at(-1)?.bidPaise ?? 0) + BID_STEP_PAISE);
 
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-8 sm:px-6">
@@ -66,18 +72,34 @@ export default async function BoardPage() {
         <Board
           board={board}
           signedIn={Boolean(user)}
-          isMerchant={isMerchant}
           playedToday={playedToday}
           startPosition={genieStart(dayKey(), board.length)}
         />
       )}
 
-      <p className="mt-5 text-center text-[12.5px] text-ink-soft">
-        A bid buys a place on the board, never better odds — the walk is the same for everyone.{" "}
-        <Link href={bidHref} className="font-semibold text-brand underline-offset-2 hover:underline">
-          Put your brand on it
+      {/* The merchant offer gets its own strip rather than a button wedged
+          beside Play: the two numbers a brand actually weighs — how much
+          room is left and what it costs to get in — sit next to the CTA. */}
+      <aside className="bidbar mt-5">
+        <span className="text-[26px] leading-none">🏪</span>
+        <div className="min-w-[200px] flex-1">
+          <div className="text-[14.5px] font-semibold">
+            {isMerchant
+              ? "Move up the board"
+              : openPlaces > 0
+                ? `${openPlaces} of ${BOARD_SIZE} places still open`
+                : "The board is full — outbid someone to get on"}
+          </div>
+          <p className="text-[12.5px] text-ink-soft">
+            From <span className="mono font-semibold">{rupees(entryPaise)}</span>. A bid buys your place in the
+            order, never better odds — the genie walks the same board for everyone.
+          </p>
+        </div>
+        <Link href={bidHref} className="btn btn-bid">
+          {isMerchant ? "📈 Raise your bid" : "Bid for a spot"}
         </Link>
-      </p>
+      </aside>
+
     </div>
   );
 }

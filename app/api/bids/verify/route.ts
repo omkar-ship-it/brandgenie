@@ -32,10 +32,14 @@ export async function POST(req: Request) {
     .limit(1);
 
   if (!bid) return NextResponse.json({ error: "That bid doesn't exist." }, { status: 404 });
-  if (bid.status === "paid") return NextResponse.json({ ok: true, alreadyPaid: true });
+  // The order has to match before anything else answers, including the
+  // already-paid shortcut — a request carrying the wrong order id should
+  // never come back as success, even when it would change nothing.
   if (bid.razorpayOrderId !== orderId) {
     return NextResponse.json({ error: "Payment doesn't match this bid." }, { status: 400 });
   }
+  // A genuine retry of a bid that already landed: same order, nothing to do.
+  if (bid.status === "paid") return NextResponse.json({ ok: true, alreadyPaid: true });
   if (!verifySignature(orderId, paymentId, signature)) {
     await db.update(bids).set({ status: "failed" }).where(eq(bids.id, bid.id));
     return NextResponse.json({ error: "We couldn't verify that payment." }, { status: 400 });

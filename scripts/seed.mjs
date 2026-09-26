@@ -25,12 +25,12 @@ const BRANDS = [
   ["Second Spin", "Entertainment", "Vinyl, mostly Indian jazz", "Shivajinagar", "₹300 off any record", "🎵", 1400],
   ["Hill & Halt", "Travel", "Homestays, four rooms each", "Coorg", "₹1500 off a night", "🏡", 1200],
   ["Tiffin Tales", "Food & Beverage", "Lunch dabbas, no plastic", "Rajajinagar", "A week of lunch free", "🍱", 1000],
-  ["Stretch Studio", "Fitness", "Mat work for desk-bound backs", "Domlur", "Three classes free", "🧘", 900],
-  ["Bloom Cart", "Shopping", "Flowers from the Hosur road farms", "Sadashivanagar", "A free bunch", "💐", 800],
-  ["The Chai Bench", "Food & Beverage", "One bench, endless cutting chai", "Majestic", "Chai for two, free", "🫖", 700],
-  ["Clay & Kiln", "Entertainment", "Pottery for people with no talent", "Hebbal", "A free wheel session", "🏺", 600],
-  ["Sole Mender", "Shopping", "Your shoes, resurrected", "Chickpet", "Free resoling", "👞", 500],
-  ["Quiet Hours Spa", "Beauty & Wellness", "Phones stay in the locker", "Richmond Town", "₹800 off a massage", "💆", 400],
+  ["Stretch Studio", "Fitness", "Mat work for desk-bound backs", "Domlur", "Three classes free", "🧘", 1100],
+  ["Bloom Cart", "Shopping", "Flowers from the Hosur road farms", "Sadashivanagar", "A free bunch", "💐", 1000],
+  ["The Chai Bench", "Food & Beverage", "One bench, endless cutting chai", "Majestic", "Chai for two, free", "🫖", 900],
+  ["Clay & Kiln", "Entertainment", "Pottery for people with no talent", "Hebbal", "A free wheel session", "🏺", 800],
+  ["Sole Mender", "Shopping", "Your shoes, resurrected", "Chickpet", "Free resoling", "👞", 700],
+  ["Quiet Hours Spa", "Beauty & Wellness", "Phones stay in the locker", "Richmond Town", "₹800 off a massage", "💆", 600],
 ];
 
 const url = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;

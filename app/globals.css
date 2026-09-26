@@ -158,6 +158,19 @@ h3 {
   font-weight: 600;
 }
 
+/* The merchant strip under the board — gold-edged so it reads as the other
+   side of the product without shouting over the play CTA. */
+.bidbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line));
+  background: color-mix(in srgb, var(--gold) 7%, var(--card));
+}
+
 /* ------------------------------------------------------- the board */
 
 /*
