@@ -36,6 +36,7 @@ export default async function RewardsPage() {
         icon: grants.icon,
         status: grants.status,
         expiresAt: grants.expiresAt,
+        redeemedAt: grants.redeemedAt,
         giftedToEmail: grants.giftedToEmail,
         giftedByUserId: grants.giftedByUserId,
         category: brands.category,
@@ -53,6 +54,7 @@ export default async function RewardsPage() {
       status: r.status,
       category: r.category ?? "",
       expiresAt: r.expiresAt.toISOString(),
+      redeemedAt: r.redeemedAt?.toISOString() ?? null,
       giftedToEmail: r.giftedToEmail,
       // Someone else put this in their hands — worth saying so on the card.
       wasGifted: Boolean(r.giftedByUserId && r.giftedByUserId !== user.id),

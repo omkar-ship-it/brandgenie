@@ -40,5 +40,8 @@ export async function POST(req: Request) {
   }
 
   await setSessionCookie(await createSession(user.id));
-  return NextResponse.json({ ok: true, email: user.email, role: user.role });
+  // Customers get asked for a name and mobile once; merchants give their
+  // details through the brand listing instead.
+  const needsProfile = user.role === "customer" && !user.name;
+  return NextResponse.json({ ok: true, email: user.email, role: user.role, needsProfile });
 }

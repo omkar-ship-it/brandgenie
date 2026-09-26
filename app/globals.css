@@ -404,6 +404,44 @@ h3 {
   animation: rise 0.3s cubic-bezier(0.2, 0.9, 0.25, 1);
 }
 
+/* ------------------------------------------------------- counter screen */
+
+.counter-sheet {
+  width: min(380px, 100%);
+}
+.counter-code {
+  font-size: clamp(30px, 11vw, 44px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.1;
+  color: var(--brand);
+}
+/* A ring that drains as the seconds go — visible from across a counter. */
+.counter-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 92px;
+  height: 92px;
+  margin-inline: auto;
+  border-radius: 50%;
+  background: conic-gradient(var(--brand) var(--pct), var(--sunk) 0);
+  transition: background 0.25s linear;
+}
+.counter-ring::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border-radius: 50%;
+  background: var(--card);
+}
+.counter-ring span {
+  position: relative;
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .genie,
   .btn,

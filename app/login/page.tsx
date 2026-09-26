@@ -29,9 +29,12 @@ function LoginForm() {
   // A brand arriving via "For brands" shouldn't have to say so twice.
   const [role, setRole] = useState<Role>(params.get("as") === "merchant" ? "merchant" : "customer");
 
-  const [step, setStep] = useState<"email" | "code">("email");
+  const [step, setStep] = useState<"email" | "code" | "profile">("email");
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
+  const [name, setName] = useState("");
+  const [mobile, setMobile] = useState("");
+  const [landing, setLanding] = useState("/");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -65,20 +68,42 @@ function LoginForm() {
 
     // The server has the last word on role — an existing merchant signing in
     // on the customer side still lands in their console.
-    const home = ROLES.find((r) => r.value === data.role)?.home ?? "/";
-    router.push(next || home);
+    const home = next || ROLES.find((r) => r.value === data.role)?.home || "/";
+    setLanding(home);
+
+    // Asked once, on a first sign-in, and never again.
+    if (data.needsProfile) return setStep("profile");
+    router.push(home);
+    router.refresh();
+  }
+
+  async function saveProfile(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    const res = await fetch("/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, mobile }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setBusy(false);
+    if (!res.ok) return setError(data.error ?? "Something went wrong.");
+    router.push(landing);
     router.refresh();
   }
 
   return (
     <main className="mx-auto max-w-[440px] px-5 py-16">
       <h1 className="text-[26px] font-semibold">
-        {step === "email" ? "Sign in" : "Check your email"}
+        {step === "email" ? "Sign in" : step === "code" ? "Check your email" : "Nearly there"}
       </h1>
       <p className="mt-2 mb-7 text-[14px] text-ink-soft">
         {step === "email"
           ? "One email, one code. Tell us which side you're on."
-          : `We sent a 6-digit code to ${email}.`}
+          : step === "code"
+            ? `We sent a 6-digit code to ${email}.`
+            : "Two details, asked once. Brands need them to hand over a reward."}
       </p>
 
       {step === "email" ? (
@@ -120,7 +145,7 @@ function LoginForm() {
             {busy ? "Sending…" : "Email me a code"}
           </button>
         </form>
-      ) : (
+      ) : step === "code" ? (
         <form onSubmit={verify} className="card p-5">
           <label className="label" htmlFor="code">
             6-digit code
@@ -150,6 +175,46 @@ function LoginForm() {
             className="mt-2 w-full text-[12px] text-ink-soft underline"
           >
             Use a different email
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={saveProfile} className="card p-5">
+          <label className="label" htmlFor="name">
+            Your name
+          </label>
+          <input
+            id="name"
+            className="input"
+            required
+            autoFocus
+            maxLength={60}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Omkar"
+          />
+
+          <label className="label mt-4" htmlFor="mobile">
+            Mobile number
+          </label>
+          <div className="flex items-stretch gap-2">
+            <span className="mono grid shrink-0 place-items-center rounded-xl border border-line bg-sunk px-3 text-[14px] text-ink-soft">
+              +91
+            </span>
+            <input
+              id="mobile"
+              className="input mono"
+              required
+              inputMode="numeric"
+              maxLength={10}
+              value={mobile}
+              onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              placeholder="9876543210"
+            />
+          </div>
+
+          {error && <p className="mt-2 text-[12px] font-semibold text-warn">{error}</p>}
+          <button className="btn btn-primary mt-5 w-full" disabled={busy}>
+            {busy ? "Saving…" : "Start playing"}
           </button>
         </form>
       )}

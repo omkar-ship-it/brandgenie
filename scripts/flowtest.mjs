@@ -13,7 +13,8 @@ const stamp = Date.now().toString(36);
 
 let pass = 0, fail = 0;
 const ok = (name, cond, extra = "") => {
-  (cond ? pass++ : fail++);
+  if (cond) pass++;
+  else fail++;
   console.log(`${cond ? "  ok  " : "FAIL  "}${name}${extra ? "  — " + extra : ""}`);
 };
 
@@ -79,6 +80,9 @@ console.log("\n-- redemption");
 const winCode = p1.data.prize.code;
 const r1 = await call("/api/rewards/redeem", { method: "POST", body: { code: winCode }, as: "winner" });
 ok("redeem: owner redeems their reward", r1.status === 200 && r1.data.ok);
+ok("redeem: returns the unique code for the counter", r1.data.code === winCode, r1.data.code);
+ok("redeem: opens a 30s counter window", r1.data.windowSeconds === 30 && !!r1.data.redeemedAt,
+  `${r1.data.windowSeconds}s from ${r1.data.redeemedAt}`);
 const r2 = await call("/api/rewards/redeem", { method: "POST", body: { code: winCode }, as: "winner" });
 ok("redeem: the same code can't be redeemed twice", r2.status === 409, r2.data.error);
 const r3 = await call("/api/rewards/redeem", { method: "POST", body: { code: winCode }, as: "friend" });
@@ -161,6 +165,19 @@ const boardHtml = await call("/");
 ok("board: the new brand appears on the live board", boardHtml.data.raw === undefined || true);
 const page = await (await fetch(BASE + "/")).text();
 ok("board: brand is rendered on the board", page.includes(`Test Brand ${stamp}`));
+
+// ---------------------------------------------------------------- profile
+console.log("\n-- first-login profile");
+const profEmail = `t-prof-${stamp}@brandgenie.test`;
+await signIn("fresh", profEmail, "customer");
+const pBad = await call("/api/profile", { method: "POST", body: { name: "A", mobile: "9876543210" }, as: "fresh" });
+ok("profile: rejects a one-letter name", pBad.status === 400, pBad.data.error);
+const pBadNum = await call("/api/profile", { method: "POST", body: { name: "Test User", mobile: "12345" }, as: "fresh" });
+ok("profile: rejects a bad mobile", pBadNum.status === 400, pBadNum.data.error);
+const pOk = await call("/api/profile", { method: "POST", body: { name: "Test User", mobile: "+91 98765 43210" }, as: "fresh" });
+ok("profile: saves, stripping +91 and spaces", pOk.status === 200 && pOk.data.mobile === "9876543210", pOk.data.mobile);
+const pAnon = await call("/api/profile", { method: "POST", body: { name: "Nobody", mobile: "9876543210" } });
+ok("profile: signed-out is refused", pAnon.status === 401);
 
 // ---------------------------------------------------------------- clicks
 console.log("\n-- click tracking");

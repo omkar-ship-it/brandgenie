@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { db, hasDb } from "@/lib/db";
 import { grants } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
+import { REDEEM_WINDOW_SECONDS } from "@/lib/rules";
 
 export async function POST(req: Request) {
   if (!hasDb || !db) return NextResponse.json({ error: "Not available right now." }, { status: 503 });
@@ -31,10 +32,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "That reward has expired." }, { status: 409 });
   }
 
+  // Burning it here, not when the timer runs out: the countdown exists to
+  // prove to the person behind the counter that this is being redeemed right
+  // now rather than being a screenshot, so the reward has to be spent the
+  // moment they're shown it. `redeemedAt` anchors the countdown, so a refresh
+  // mid-window resumes it instead of restarting it.
+  const redeemedAt = new Date();
   await db
     .update(grants)
-    .set({ status: "redeemed", redeemedAt: new Date() })
+    .set({ status: "redeemed", redeemedAt })
     .where(eq(grants.id, grant.id));
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    code: grant.code,
+    label: grant.label,
+    brandName: grant.brandName,
+    redeemedAt: redeemedAt.toISOString(),
+    windowSeconds: REDEEM_WINDOW_SECONDS,
+  });
 }

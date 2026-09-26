@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { CATEGORY_ACCENT } from "@/lib/rules";
+import { useEffect, useState } from "react";
+import { CATEGORY_ACCENT, REDEEM_WINDOW_SECONDS } from "@/lib/rules";
 
 export type RewardCard = {
   code: string;
@@ -11,9 +11,24 @@ export type RewardCard = {
   status: string;
   category: string;
   expiresAt: string;
+  redeemedAt: string | null;
   giftedToEmail: string | null;
   wasGifted: boolean;
 };
+
+type Counter = { code: string; label: string; brandName: string; endsAt: number };
+
+/** Anything redeemed in the last 30s is still live at the counter. */
+function openCounter(rewards: RewardCard[]): Counter | null {
+  for (const r of rewards) {
+    if (r.status !== "redeemed" || !r.redeemedAt) continue;
+    const endsAt = new Date(r.redeemedAt).getTime() + REDEEM_WINDOW_SECONDS * 1000;
+    if (endsAt > Date.now()) {
+      return { code: r.code, label: r.label, brandName: r.brandName, endsAt };
+    }
+  }
+  return null;
+}
 
 function daysLeft(iso: string) {
   return Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000);
@@ -28,6 +43,19 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [sentTo, setSentTo] = useState("");
+  const [confirming, setConfirming] = useState<RewardCard | null>(null);
+  // Seeded from the server so a refresh mid-window resumes the countdown
+  // rather than losing it.
+  const [counter, setCounter] = useState<Counter | null>(() => openCounter(rewards));
+  const [left, setLeft] = useState(REDEEM_WINDOW_SECONDS);
+
+  useEffect(() => {
+    if (!counter) return;
+    const tick = () => setLeft(Math.max(0, Math.ceil((counter.endsAt - Date.now()) / 1000)));
+    tick();
+    const id = setInterval(tick, 250);
+    return () => clearInterval(id);
+  }, [counter]);
 
   async function redeem(code: string) {
     setBusy(code);
@@ -39,8 +67,14 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
     });
     const data = await res.json().catch(() => ({}));
     setBusy("");
+    setConfirming(null);
     if (!res.ok) return setError(data.error ?? "Couldn't redeem that.");
-    window.location.reload();
+    setCounter({
+      code: data.code,
+      label: data.label,
+      brandName: data.brandName,
+      endsAt: new Date(data.redeemedAt).getTime() + (data.windowSeconds ?? REDEEM_WINDOW_SECONDS) * 1000,
+    });
   }
 
   async function gift() {
@@ -109,8 +143,8 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
 
                 {usable && (
                   <div className="mt-4 grid grid-cols-2 gap-2">
-                    <button onClick={() => redeem(r.code)} disabled={busy === r.code} className="btn btn-primary">
-                      {busy === r.code ? "…" : "Redeem"}
+                    <button onClick={() => setConfirming(r)} className="btn btn-primary">
+                      Redeem
                     </button>
                     <button onClick={() => setGiftFor(r)} className="btn btn-ghost">
                       🎁 Gift it
@@ -122,6 +156,79 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
           );
         })}
       </div>
+
+      {/* --------------------------------- confirm before burning it */}
+      {confirming && (
+        <div
+          className="backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Redeem at the counter"
+          onClick={(e) => e.target === e.currentTarget && setConfirming(null)}
+        >
+          <div className="sheet p-6 text-center">
+            <div className="text-[30px]">{confirming.icon}</div>
+            <h2 className="mt-2 text-[19px] font-semibold">Are you at the counter?</h2>
+            <p className="mx-auto mt-1 max-w-[34ch] text-[13.5px] text-ink-soft">
+              Your code shows for {REDEEM_WINDOW_SECONDS} seconds for staff to check, and{" "}
+              <strong>{confirming.label}</strong> is spent the moment you tap. Don&rsquo;t do this early.
+            </p>
+            <button
+              onClick={() => redeem(confirming.code)}
+              disabled={busy === confirming.code}
+              className="btn btn-primary mt-5 w-full"
+            >
+              {busy === confirming.code ? "…" : `Show the code — ${REDEEM_WINDOW_SECONDS}s`}
+            </button>
+            <button onClick={() => setConfirming(null)} className="btn btn-ghost mt-2 w-full">
+              Not yet
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* --------------------------------- the counter screen */}
+      {counter && (
+        <div className="backdrop" role="dialog" aria-modal="true" aria-label="Show this at the counter">
+          <div className="sheet counter-sheet p-7 text-center">
+            {left > 0 ? (
+              <>
+                <div className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">
+                  Show this at the counter
+                </div>
+                <div className="counter-code mono mt-3">{counter.code}</div>
+                <div className="mt-2 text-[15px] font-semibold">{counter.label}</div>
+                <div className="text-[12.5px] text-ink-soft">{counter.brandName}</div>
+
+                {/* The number and the draining ring both move, so staff can
+                    see at a glance that this is live and not a screenshot. */}
+                <div className="counter-ring mt-6" style={{ "--pct": `${(left / REDEEM_WINDOW_SECONDS) * 100}%` } as React.CSSProperties}>
+                  <span className="mono">{left}</span>
+                </div>
+                <p className="mt-3 text-[12px] text-ink-soft">
+                  seconds left · redeemed{" "}
+                  {new Date(counter.endsAt - REDEEM_WINDOW_SECONDS * 1000).toLocaleTimeString("en-IN", {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-[34px]">✅</div>
+                <h2 className="mt-2 text-[19px] font-semibold">Redeemed</h2>
+                <p className="mt-1 text-[13.5px] text-ink-soft">
+                  <strong>{counter.label}</strong> is done. The code{" "}
+                  <span className="mono">{counter.code}</span> won&rsquo;t work again.
+                </p>
+                <button onClick={() => window.location.reload()} className="btn btn-primary mt-5 w-full">
+                  Done
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* --------------------------------- gift sheet */}
       {giftFor && (

@@ -11,6 +11,11 @@ export const users = pgTable("users", {
   // "customer" or "merchant" — chosen at sign-up, and what the nav keys off.
   // A customer who later lists a brand is promoted; nobody is demoted.
   role: text("role").notNull().default("customer"),
+  // Asked once, on a customer's first sign-in, and never again. Null on
+  // accounts created before this existed and on merchants, who give their
+  // details through the brand listing instead.
+  name: text("name"),
+  mobile: text("mobile"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -66,6 +66,20 @@ vanishing, so the act has a visible consequence. The friend claims through an
 emailed link and takes ownership (`user_id` transfers, status returns to
 `active`).
 
+**Name and mobile are asked exactly once.** On a customer's first sign-in,
+after the OTP verifies, the login form shows a third step. `users.name` being
+null is what triggers it, so nothing re-asks and nothing else writes those
+fields. Merchants are never asked — they give their details through the brand
+listing. Accounts that existed before this will see the step on their next
+sign-in, which is correct.
+
+**Redeeming burns the reward immediately and then shows a 30-second counter.**
+The countdown exists to prove to the person behind the counter that this is
+live and not a screenshot, so it can't be a grace period — the reward is spent
+the moment the customer taps, behind a confirm that says so. `grants.redeemedAt`
+anchors the window, so refreshing mid-countdown resumes it rather than
+restarting it, and reloading later shows the reward plainly as redeemed.
+
 **Every reward expires.** Each brand sets `valid_days` per reward; the expiry
 is stamped onto the grant at the moment it's won, not read live from the
 brand's current setting — so a brand editing their listing can't retroactively

@@ -3,6 +3,8 @@ export const BID_BASE_PAISE = 50_000; // ₹500 — the floor to get on the boar
 export const BID_STEP_PAISE = 10_000; // ₹100 — the increment above it
 export const WISHES_PER_DAY = 2;
 export const DEFAULT_REWARD_VALID_DAYS = 14;
+/** How long the code stays on screen at the counter after being redeemed. */
+export const REDEEM_WINDOW_SECONDS = 30;
 
 export const CATEGORIES = [
   "Food & Beverage",
