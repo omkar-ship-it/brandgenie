@@ -42,6 +42,8 @@ function loadCheckout() {
 export function BrandConsole({
   draft,
   hasBrand,
+  logoUrl: initialLogo,
+  canUploadLogo,
   currentBidPaise,
   position,
   suggestedPaise,
@@ -49,6 +51,8 @@ export function BrandConsole({
 }: {
   draft: BrandDraft;
   hasBrand: boolean;
+  logoUrl: string | null;
+  canUploadLogo: boolean;
   currentBidPaise: number;
   position: number | null;
   suggestedPaise: number;
@@ -62,6 +66,27 @@ export function BrandConsole({
 
   const [amount, setAmount] = useState(String(Math.round(suggestedPaise / 100)));
   const [paying, setPaying] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(initialLogo);
+  const [logoBusy, setLogoBusy] = useState(false);
+
+  async function uploadLogo(file: File) {
+    setLogoBusy(true);
+    setError("");
+    const body = new FormData();
+    body.append("file", file);
+    const res = await fetch("/api/brand/logo", { method: "POST", body });
+    const data = await res.json().catch(() => ({}));
+    setLogoBusy(false);
+    if (!res.ok) return setError(data.error ?? "Couldn't upload that.");
+    setLogoUrl(data.logoUrl);
+  }
+
+  async function removeLogo() {
+    setLogoBusy(true);
+    await fetch("/api/brand/logo", { method: "DELETE" });
+    setLogoBusy(false);
+    setLogoUrl(null);
+  }
 
   const set = <K extends keyof BrandDraft>(key: K, value: BrandDraft[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
@@ -152,6 +177,57 @@ export function BrandConsole({
         <p className="mt-1 text-[13px] text-ink-soft">
           This is what a customer sees when they tap your tile. Keep it about the brand, not a branch.
         </p>
+
+        {/* Logo first — it's the thing a brand recognises itself by on the
+            board, and uploading it before anything else makes the tile
+            preview meaningful straight away. */}
+        <div className="mt-5 flex items-center gap-4">
+          <div className="logo-slot">
+            {logoUrl ? (
+              /* Plain img: blob URLs are arbitrary hosts and next/image would
+                 need each allowlisted in next.config for no real gain here. */
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="" />
+            ) : (
+              <span className="text-[11px] font-semibold text-ink-soft">No logo</span>
+            )}
+          </div>
+          <div className="min-w-[180px] flex-1">
+            <span className="label">Logo</span>
+            {canUploadLogo ? (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <label className="btn btn-ghost cursor-pointer">
+                    {logoBusy ? "Uploading…" : logoUrl ? "Replace" : "Upload a logo"}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      className="hidden"
+                      disabled={logoBusy || !saved}
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) void uploadLogo(f);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  {logoUrl && (
+                    <button type="button" onClick={removeLogo} disabled={logoBusy} className="btn btn-ghost">
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <p className="mt-1.5 text-[11.5px] text-ink-soft">
+                  {saved ? "PNG, JPG, WebP or SVG, under 2MB. Square works best." : "Save your listing first."}
+                </p>
+              </>
+            ) : (
+              <p className="text-[11.5px] text-ink-soft">
+                Logo uploads need blob storage configured. Your initials show on the tile until then.
+              </p>
+            )}
+          </div>
+        </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           <Field label="Brand name" className="sm:col-span-2">

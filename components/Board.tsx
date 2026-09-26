@@ -220,9 +220,18 @@ export function Board({
               <span className="tile-rank">#{position}</span>
               <span
                 className="tile-mark"
-                style={{ background: `linear-gradient(140deg, hsl(${h} 62% 46%), hsl(${(h + 34) % 360} 66% 32%))` }}
+                style={
+                  entry.logoUrl
+                    ? undefined
+                    : { background: `linear-gradient(140deg, hsl(${h} 62% 46%), hsl(${(h + 34) % 360} 66% 32%))` }
+                }
               >
-                {initials(entry.name)}
+                {entry.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={entry.logoUrl} alt="" className="tile-logo" />
+                ) : (
+                  initials(entry.name)
+                )}
               </span>
               <span className="tile-name">{entry.name}</span>
               <span className="tile-reward">
@@ -276,7 +285,13 @@ export function Board({
             <div className="mono text-[11px] text-ink-soft">
               Position #{selected.position} · bid {rupees(selected.bidPaise)} · {compact(selected.clicks)} clicks
             </div>
-            <h2 className="mt-1 text-[21px] font-semibold">{selected.name}</h2>
+            <div className="mt-1 flex items-center gap-3">
+              {selected.logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={selected.logoUrl} alt="" className="sheet-logo" />
+              )}
+              <h2 className="text-[21px] font-semibold">{selected.name}</h2>
+            </div>
             {selected.tagline && <p className="mt-1 text-[13.5px] text-ink-soft">{selected.tagline}</p>}
 
             <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">

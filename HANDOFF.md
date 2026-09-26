@@ -109,11 +109,22 @@ customer who later lists a brand is promoted to merchant; nobody is ever
 demoted, so a merchant who signs in on the customer side keeps their console.
 The server's returned role wins over whatever the form said.
 
-**Tile clicks are demo-grade, deliberately.** `brands.clicks` counts someone
-opening a brand's card, incremented by `POST /api/brands/click` with no session
-and no dedupe — it's the engagement number a brand is buying a position for,
-and it's only as honest as the visitor. If it ever backs pricing, move it to a
-`brand_views` table with a session and timestamp so repeats can be collapsed.
+**Tile clicks are demo-grade, deliberately.** Opening a brand's card writes
+twice: `brands.clicks` (lifetime) and a `brand_clicks` row keyed by brand and
+IST day, which is what the brand's own 7-day chart reads. No session, no
+dedupe — it's the engagement number a brand is buying a position for, and it's
+only as honest as the visitor. If it ever backs pricing, put a session id on
+the per-day row so repeats can be collapsed.
+
+**Won and redeemed are the same grant counted on two different dates.** A
+reward won Monday and redeemed Friday belongs to both days, which is why
+`getBrandStats` runs three separate queries instead of one join — joining
+double-counts.
+
+**Logos live on Vercel Blob, in a PUBLIC store.** The first store was created
+`--access private` and every upload failed with "Cannot use public access on a
+private store"; it was deleted and recreated with `--access public`. Replacing
+a logo deletes the old blob so the store doesn't fill with orphans.
 
 **Board order is derived, never stored.** `getBoard()` sorts live by
 `bid_paise desc, bid_at asc` and assigns positions 1..50 on read. So a new bid
@@ -171,6 +182,7 @@ lib/
   razorpay.ts       order creation, signature verification, mock mode
   rules.ts          all tunable constants, IST helpers, genieStart()
   board.ts          getBoard() (the derived ranking), getBrandForUser()
+  stats.ts          getBrandStats() — per-day opens/won/redeemed for a brand
 
 app/api/
   auth/request-otp, auth/verify-otp, auth/logout (303 redirect — posted
@@ -339,6 +351,15 @@ click again and get a 409 in the face.
 with a blank where the variable should be. "The API accepted it" is not
 evidence the email is right — only reading the inbox is. Pull the template
 body from the API and match the tag exactly.
+
+**`vercel env pull`, `vercel link` and `vercel blob create-store` all rewrite
+`.env.local` with production values — silently.** That points local dev at the
+**production Neon database**, and `npm run db:push` and the flow suite go there
+too. It happened once, and three test brands plus two orphaned logo blobs ended
+up in production before it was spotted. After running any Vercel CLI command
+that touches env, check `.env.local`: `DATABASE_URL` must be the localhost one
+and there must be **no `POSTGRES_URL`** line at all, because `lib/db` prefers
+`POSTGRES_URL` over `DATABASE_URL`. The file carries a warning header saying so.
 
 **Small ones:** HTML entities inside JS string literals print literally — use
 real `’` characters; JSX drops the space between `{expr}` and a following

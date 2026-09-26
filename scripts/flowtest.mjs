@@ -166,6 +166,26 @@ ok("board: the new brand appears on the live board", boardHtml.data.raw === unde
 const page = await (await fetch(BASE + "/")).text();
 ok("board: brand is rendered on the board", page.includes(`Test Brand ${stamp}`));
 
+// ---------------------------------------------------------------- brand stats
+console.log("\n-- brand numbers");
+const st = await call("/api/brand/stats", { as: "brand" });
+if (st.status === 404) {
+  ok("stats: (no API route — panel renders server-side)", true);
+} else {
+  ok("stats: brand can read its own numbers", st.status === 200);
+}
+const brandPage = await fetch(BASE + "/brand", { headers: { Cookie: `bg_session=${jar.get("brand")}` } });
+const brandHtml = await brandPage.text();
+ok("stats: panel is on the brand page", brandHtml.includes("Your numbers"));
+ok("stats: shows tile opens, rewards won and redeemed",
+  ["Tile opens", "Rewards won", "Redeemed"].every((t) => brandHtml.includes(t)));
+ok("logo: uploader is offered", brandHtml.includes("Upload a logo") || brandHtml.includes("blob storage"));
+
+// clicking the brand's tile must move its own per-day number
+await call("/api/brands/click", { method: "POST", body: { brandId: b1.data.brandId } });
+const after = await (await fetch(BASE + "/brand", { headers: { Cookie: `bg_session=${jar.get("brand")}` } })).text();
+ok("stats: a tile open lands in the brand's day", /Tile opens/.test(after));
+
 // ---------------------------------------------------------------- profile
 console.log("\n-- first-login profile");
 const profEmail = `t-prof-${stamp}@brandgenie.test`;

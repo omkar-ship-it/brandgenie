@@ -55,6 +55,9 @@ export const brands = pgTable("brands", {
   area: text("area").notNull().default(""),
   website: text("website"),
   instagram: text("instagram"),
+  // Blob URL of an uploaded logo. Null falls back to the brand's initials,
+  // so the board never has a hole in it.
+  logoUrl: text("logo_url"),
   bidPaise: integer("bid_paise").notNull().default(0),
   // How many people have opened this brand's card from the board. The
   // engagement number a brand is buying a position for.
@@ -137,6 +140,24 @@ export const grants = pgTable("grants", {
   redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/**
+ * Per-day tile opens. `brands.clicks` stays as the lifetime total — this
+ * table is what lets a brand see the shape of a day rather than one
+ * ever-growing number.
+ */
+export const brandClicks = pgTable(
+  "brand_clicks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    brandId: uuid("brand_id")
+      .notNull()
+      .references(() => brands.id, { onDelete: "cascade" }),
+    dayKey: text("day_key").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [uniqueIndex("brand_clicks_brand_day_idx").on(t.brandId, t.dayKey)]
+);
 
 // ---------------------------------------------------------------- wishes
 

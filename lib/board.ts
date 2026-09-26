@@ -12,6 +12,7 @@ export type BoardEntry = {
   area: string;
   website: string | null;
   instagram: string | null;
+  logoUrl: string | null;
   bidPaise: number;
   clicks: number;
   rewardId: string | null;
@@ -38,6 +39,7 @@ export async function getBoard(): Promise<BoardEntry[]> {
       area: brands.area,
       website: brands.website,
       instagram: brands.instagram,
+      logoUrl: brands.logoUrl,
       bidPaise: brands.bidPaise,
       clicks: brands.clicks,
       rewardId: rewards.id,
@@ -61,6 +63,7 @@ export async function getBoard(): Promise<BoardEntry[]> {
     area: r.area,
     website: r.website,
     instagram: r.instagram,
+    logoUrl: r.logoUrl,
     bidPaise: r.bidPaise,
     clicks: r.clicks,
     rewardId: r.rewardId,

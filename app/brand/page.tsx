@@ -4,6 +4,8 @@ import { getBoard, getBrandForUser } from "@/lib/board";
 import { razorpayConfigured } from "@/lib/razorpay";
 import { BID_BASE_PAISE, BID_STEP_PAISE, DEFAULT_REWARD_VALID_DAYS, rupees } from "@/lib/rules";
 import { BrandConsole, type BrandDraft } from "@/components/BrandConsole";
+import { BrandStatsPanel } from "@/components/BrandStats";
+import { getBrandStats } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 
@@ -58,6 +60,7 @@ export default async function BrandPage() {
       }
     : EMPTY;
 
+  const stats = owned ? await getBrandStats(owned.brand.id) : null;
   const currentBid = owned?.brand.bidPaise ?? 0;
   const minPaise = Math.max(BID_BASE_PAISE, currentBid + BID_STEP_PAISE);
   // Enough to clear whoever holds #1 today, rounded up to a whole step.
@@ -80,9 +83,17 @@ export default async function BrandPage() {
         </p>
       )}
 
+      {stats && (
+        <div className="mb-5">
+          <BrandStatsPanel stats={stats} />
+        </div>
+      )}
+
       <BrandConsole
         draft={draft}
         hasBrand={Boolean(owned)}
+        logoUrl={owned?.brand.logoUrl ?? null}
+        canUploadLogo={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}
         currentBidPaise={currentBid}
         position={position}
         suggestedPaise={suggested}
