@@ -23,6 +23,8 @@ export default async function BoardPage() {
     playedToday = Boolean(play);
   }
 
+  const isMerchant = user?.role === "merchant";
+  const bidHref = isMerchant ? "/brand" : "/login?next=/brand&as=merchant";
   const topBid = board[0]?.bidPaise ?? 0;
   const stock = board.reduce((sum, e) => sum + e.remaining, 0);
 
@@ -56,14 +58,15 @@ export default async function BoardPage() {
           <p className="mx-auto mt-1 max-w-[40ch] text-[13.5px] text-ink-soft">
             The first brand to bid takes position #1 and stays there until someone outbids them.
           </p>
-          <Link href="/brand" className="btn btn-primary mt-5">
-            Claim position #1
+          <Link href={bidHref} className="btn btn-primary mt-5">
+            🏪 Claim position #1
           </Link>
         </div>
       ) : (
         <Board
           board={board}
           signedIn={Boolean(user)}
+          isMerchant={isMerchant}
           playedToday={playedToday}
           startPosition={genieStart(dayKey(), board.length)}
         />
@@ -71,7 +74,7 @@ export default async function BoardPage() {
 
       <p className="mt-5 text-center text-[12.5px] text-ink-soft">
         A bid buys a place on the board, never better odds — the walk is the same for everyone.{" "}
-        <Link href="/brand" className="font-semibold text-brand underline-offset-2 hover:underline">
+        <Link href={bidHref} className="font-semibold text-brand underline-offset-2 hover:underline">
           Put your brand on it
         </Link>
       </p>

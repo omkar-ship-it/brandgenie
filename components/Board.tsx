@@ -32,14 +32,19 @@ type PlayState =
 export function Board({
   board,
   signedIn,
+  isMerchant,
   playedToday,
   startPosition,
 }: {
   board: BoardEntry[];
   signedIn: boolean;
+  isMerchant: boolean;
   playedToday: boolean;
   startPosition: number;
 }) {
+  // A merchant already has a console; anyone else needs the merchant door,
+  // which /brand handles whether or not they're signed in.
+  const bidHref = isMerchant ? "/brand" : "/login?next=/brand&as=merchant";
   const [selected, setSelected] = useState<BoardEntry | null>(null);
   const [state, setState] = useState<PlayState>({ kind: "idle" });
   const [token, setToken] = useState(startPosition);
@@ -155,15 +160,23 @@ export function Board({
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}
         </div>
 
-        {signedIn ? (
-          <button onClick={startRound} disabled={busy || spent || board.length === 0} className="btn btn-primary">
-            {busy ? "He’s off…" : spent ? "Come back tomorrow" : "🧞 Wake the genie"}
-          </button>
-        ) : (
-          <Link href="/login?next=/" className="btn btn-primary">
-            Sign in to play
+        {/* The two ways in: play the round, or buy a place on it. Both stay
+            visible whichever side you're signed in as — the board is where a
+            brand discovers there's something to bid on. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {signedIn ? (
+            <button onClick={startRound} disabled={busy || spent || board.length === 0} className="btn btn-primary">
+              {busy ? "He’s off…" : spent ? "Come back tomorrow" : "🧞 Wake the genie"}
+            </button>
+          ) : (
+            <Link href="/login?next=/" className="btn btn-primary">
+              🎁 Play
+            </Link>
+          )}
+          <Link href={bidHref} className="btn btn-bid">
+            {isMerchant ? "📈 Raise your bid" : "🏪 Bid for a spot"}
           </Link>
-        )}
+        </div>
       </div>
 
       {/* --------------------------------- prize */}

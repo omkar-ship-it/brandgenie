@@ -105,6 +105,19 @@ h3 {
   transform: translateY(-1px);
   filter: brightness(1.07);
 }
+/* The merchant CTA. Deliberately not the primary purple — it sits beside
+   Play without competing with it, and matches the 🏪 Brand badge. */
+.btn-bid {
+  border: 1px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 10%, var(--card));
+  color: var(--gold);
+}
+.btn-bid:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--gold);
+  color: #fff;
+}
+
 .btn-ghost {
   border: 1px solid var(--line);
   background: var(--card);

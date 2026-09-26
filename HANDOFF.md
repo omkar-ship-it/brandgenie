@@ -76,6 +76,13 @@ Literally that minute — 11:11am and 11:11pm. The browser countdown is a hint;
 `isWishWindowOpen()` is re-checked server-side in the route, so a clock-skewed
 or tampered client gets a 403.
 
+**The board carries both CTAs, always.** Play and Bid sit side by side in the
+round card whichever side you're signed in as — the board is where a brand
+discovers there's something to bid on, so hiding the merchant CTA from
+customers would close the top of that funnel. The bid CTA routes to `/brand`
+for a merchant and to `/login?next=/brand&as=merchant` for everyone else, so
+the details-and-payment flow is reached the same way from every entry point.
+
 **Customers and merchants are different accounts.** `users.role` is picked at
 sign-up ("Play & win" vs "List my brand") and decides the nav and where you
 land after signing in — merchants go to `/brand`, customers to the board. A
