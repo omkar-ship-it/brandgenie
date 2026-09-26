@@ -199,11 +199,13 @@ re-shoot if needed.
 1. **Neon database.** Create it, set `DATABASE_URL` in Vercel, run
    `npm run db:push` once against it. Nothing works without this — every page
    degrades to an empty state, which is worse than an error for a demo.
-2. **MSG91 gift template doesn't exist yet.** The OTP template is the
-   LetterMail one (merge tag `{{OTP_CODE}}`). The gift template needs
-   creating in the MSG91 console with merge tags `sender_name`, `reward`,
-   `claim_link`, then `MSG91_GIFT_TEMPLATE_ID` set. Until then gift links only
-   appear in the server log — fine for a demo, broken for real customers.
+2. **MSG91 gift template doesn't exist yet.** OTP email is done (2026-09-26):
+   template id `brandgenie`, on the same MSG91 account as LetterMail, sending
+   from `otp@mail.loyalgenie.in` — a live send to a real inbox returned 2xx.
+   The gift template still needs creating in the MSG91 console with merge tags
+   `sender_name`, `reward`, `claim_link`, then `MSG91_GIFT_TEMPLATE_ID` set.
+   Until then gift claim links only appear in the server log — fine for a
+   demo, broken for real customers.
 3. **Razorpay keys** whenever live bids are wanted. Test mode is visibly
    labelled and confirms bids without payment, so the bid flow demos fine
    without them.
