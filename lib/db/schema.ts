@@ -8,6 +8,9 @@ import { pgTable, text, timestamp, integer, uuid, uniqueIndex } from "drizzle-or
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
   email: text("email").notNull().unique(),
+  // "customer" or "merchant" — chosen at sign-up, and what the nav keys off.
+  // A customer who later lists a brand is promoted; nobody is demoted.
+  role: text("role").notNull().default("customer"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -48,6 +51,9 @@ export const brands = pgTable("brands", {
   website: text("website"),
   instagram: text("instagram"),
   bidPaise: integer("bid_paise").notNull().default(0),
+  // How many people have opened this brand's card from the board. The
+  // engagement number a brand is buying a position for.
+  clicks: integer("clicks").notNull().default(0),
   // Breaks ties between equal bids — whoever got there first keeps the rank.
   bidAt: timestamp("bid_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

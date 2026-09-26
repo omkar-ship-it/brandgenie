@@ -5,7 +5,12 @@ import Link from "next/link";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE, CATEGORY_ACCENT, CATEGORY_ICON, rupees } from "@/lib/rules";
 
-const GAP = 6;
+/** 1 234 clicks reads as "1.2k" once a tile gets busy. */
+function compact(n: number) {
+  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n);
+}
+
+const GAP = 10;
 
 function initials(name: string) {
   const words = name.split(/\s+/).filter((w) => /[a-z]/i.test(w));
@@ -41,7 +46,9 @@ export function Board({
   const [hop, setHop] = useState(false);
   const [error, setError] = useState("");
   const [cellSize, setCellSize] = useState(0);
+  const [cellH, setCellH] = useState(0);
   const [cols, setCols] = useState(10);
+  const [gap, setGap] = useState(GAP);
   const observer = useRef<ResizeObserver | null>(null);
 
   // The board reflows to 5 columns on narrow screens, so both the cell size
@@ -52,14 +59,27 @@ export function Board({
     const ro = new ResizeObserver(() => {
       const tile = node.querySelector(".tile") as HTMLElement | null;
       if (!tile) return;
+      const style = getComputedStyle(node);
       setCellSize(tile.offsetWidth);
-      setCols(getComputedStyle(node).gridTemplateColumns.split(" ").length);
+      setCellH(tile.offsetHeight);
+      setCols(style.gridTemplateColumns.split(" ").length);
+      setGap(parseFloat(style.gap) || 0);
     });
     ro.observe(node);
     observer.current = ro;
   }, []);
 
   const busy = state.kind === "walking";
+
+  function openBrand(entry: BoardEntry) {
+    setSelected(entry);
+    // Fire-and-forget: a failed count must never block the card opening.
+    void fetch("/api/brands/click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brandId: entry.brandId }),
+    }).catch(() => {});
+  }
   // Once the round has run in this tab, the server's `playedToday` is stale.
   const spent = playedToday || state.kind === "done";
 
@@ -188,15 +208,16 @@ export function Board({
           }
           const accent = CATEGORY_ACCENT[entry.category] ?? "var(--brand)";
           const h = hue(entry.brandId);
+          const out = entry.remaining <= 0;
           return (
             <button
               key={position}
-              className="tile"
-              onClick={() => setSelected(entry)}
+              className={`tile${token === position ? " has-genie" : ""}`}
+              onClick={() => openBrand(entry)}
               style={{ borderColor: state.kind === "done" && state.landed === position ? "var(--good)" : undefined }}
               title={`#${position} · ${entry.name}`}
             >
-              <span className="tile-rank">{position}</span>
+              <span className="tile-rank">#{position}</span>
               <span
                 className="tile-mark"
                 style={{ background: `linear-gradient(140deg, hsl(${h} 62% 46%), hsl(${(h + 34) % 360} 66% 32%))` }}
@@ -204,7 +225,23 @@ export function Board({
                 {initials(entry.name)}
               </span>
               <span className="tile-name">{entry.name}</span>
-              <span className="h-[3px] w-6 rounded-full" style={{ background: accent }} />
+              <span className="tile-reward">
+                {entry.rewardLabel ? (
+                  <>
+                    {entry.rewardIcon} {entry.rewardLabel}
+                    {!out && <span className="text-ink-soft"> · {entry.remaining} left</span>}
+                  </>
+                ) : (
+                  <span className="opacity-60">No reward listed</span>
+                )}
+              </span>
+              {out && <span className="tile-out">SOLD OUT</span>}
+              <span className="tile-stats">
+                <span className="tile-bid" style={{ color: accent }}>
+                  {rupees(entry.bidPaise)}
+                </span>
+                <span className="tile-clicks">{compact(entry.clicks)} clicks</span>
+              </span>
             </button>
           );
         })}
@@ -213,14 +250,14 @@ export function Board({
           <span
             className={`genie ${hop ? "hop" : ""}`}
             style={{
-              left: col * (cellSize + GAP),
-              top: row * (cellSize + GAP),
+              left: col * (cellSize + gap),
+              top: row * (cellH + gap),
               width: cellSize,
-              height: cellSize,
+              height: cellH,
             }}
             aria-hidden="true"
           >
-            🧞
+            <span>🧞</span>
           </span>
         )}
       </div>
@@ -237,7 +274,7 @@ export function Board({
           <div className="sheet p-6">
             <div className="h-1.5 -mx-6 -mt-6 mb-5 rounded-t-[18px]" style={{ background: CATEGORY_ACCENT[selected.category] }} />
             <div className="mono text-[11px] text-ink-soft">
-              Position #{selected.position} · bid {rupees(selected.bidPaise)}
+              Position #{selected.position} · bid {rupees(selected.bidPaise)} · {compact(selected.clicks)} clicks
             </div>
             <h2 className="mt-1 text-[21px] font-semibold">{selected.name}</h2>
             {selected.tagline && <p className="mt-1 text-[13.5px] text-ink-soft">{selected.tagline}</p>}

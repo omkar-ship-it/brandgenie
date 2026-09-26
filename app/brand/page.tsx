@@ -31,7 +31,7 @@ export default async function BrandPage() {
         <p className="mx-auto mt-2 max-w-[38ch] text-[13.5px] text-ink-soft">
           Sign in with your email, describe what you&rsquo;re giving away, and bid for a place on the board.
         </p>
-        <Link href="/login?next=/brand" className="btn btn-primary mt-6">
+        <Link href="/login?next=/brand&as=merchant" className="btn btn-primary mt-6">
           Sign in with email
         </Link>
       </div>

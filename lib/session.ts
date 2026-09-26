@@ -6,7 +6,7 @@ import { sessions, users } from "./db/schema";
 const SESSION_COOKIE = "bg_session";
 const SESSION_DAYS = 30;
 
-export type SessionUser = { id: string; email: string };
+export type SessionUser = { id: string; email: string; role: string };
 
 export async function createSession(userId: string): Promise<string> {
   if (!hasDb || !db) throw new Error("Accounts require a database connection.");
@@ -33,14 +33,14 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   if (!token) return null;
 
   const [row] = await db
-    .select({ id: users.id, email: users.email, expiresAt: sessions.expiresAt })
+    .select({ id: users.id, email: users.email, role: users.role, expiresAt: sessions.expiresAt })
     .from(sessions)
     .innerJoin(users, eq(sessions.userId, users.id))
     .where(eq(sessions.id, token))
     .limit(1);
 
   if (!row || row.expiresAt.getTime() < Date.now()) return null;
-  return { id: row.id, email: row.email };
+  return { id: row.id, email: row.email, role: row.role };
 }
 
 export async function destroySession(): Promise<void> {

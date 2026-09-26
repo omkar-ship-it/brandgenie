@@ -13,6 +13,7 @@ export type BoardEntry = {
   website: string | null;
   instagram: string | null;
   bidPaise: number;
+  clicks: number;
   rewardId: string | null;
   rewardLabel: string | null;
   rewardIcon: string;
@@ -38,6 +39,7 @@ export async function getBoard(): Promise<BoardEntry[]> {
       website: brands.website,
       instagram: brands.instagram,
       bidPaise: brands.bidPaise,
+      clicks: brands.clicks,
       rewardId: rewards.id,
       rewardLabel: rewards.label,
       rewardIcon: rewards.icon,
@@ -60,6 +62,7 @@ export async function getBoard(): Promise<BoardEntry[]> {
     website: r.website,
     instagram: r.instagram,
     bidPaise: r.bidPaise,
+    clicks: r.clicks,
     rewardId: r.rewardId,
     rewardLabel: r.rewardLabel,
     rewardIcon: r.rewardIcon ?? "🎁",

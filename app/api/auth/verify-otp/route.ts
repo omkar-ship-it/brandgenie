@@ -13,6 +13,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null);
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const code = typeof body?.code === "string" ? body.code.trim() : "";
+  const role = body?.role === "merchant" ? "merchant" : "customer";
   if (!email || !code) return NextResponse.json({ error: "Enter the code." }, { status: 400 });
 
   const [latest] = await db
@@ -29,8 +30,15 @@ export async function POST(req: Request) {
   await db.update(otpCodes).set({ consumedAt: new Date() }).where(eq(otpCodes.id, latest.id));
 
   let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (!user) [user] = await db.insert(users).values({ email }).returning();
+  if (!user) {
+    [user] = await db.insert(users).values({ email, role }).returning();
+  } else if (role === "merchant" && user.role !== "merchant") {
+    // Someone who joined as a customer and is now listing a brand gets
+    // promoted. There's no path back down — a merchant who signs in on the
+    // customer side keeps their console rather than losing it.
+    [user] = await db.update(users).set({ role }).where(eq(users.id, user.id)).returning();
+  }
 
   await setSessionCookie(await createSession(user.id));
-  return NextResponse.json({ ok: true, email: user.email });
+  return NextResponse.json({ ok: true, email: user.email, role: user.role });
 }

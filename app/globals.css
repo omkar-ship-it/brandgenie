@@ -147,30 +147,40 @@ h3 {
 
 /* ------------------------------------------------------- the board */
 
+/*
+ * Tiles are big enough to carry a brand's numbers, not just its name: the
+ * grid fills to whatever fits at >=168px, so the column count follows the
+ * viewport instead of being hard-coded. Board.tsx measures the result to
+ * place the genie, so changing these numbers needs no JS change.
+ */
 .board {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 10px;
 }
-@media (max-width: 720px) {
+@media (max-width: 560px) {
   .board {
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
   }
 }
 
 .tile {
   position: relative;
-  aspect-ratio: 1;
-  border-radius: 12px;
+  /* Content decides the height — a forced square left a dead band across
+     the middle of every tile. Board.tsx measures width and height
+     separately so the genie still lands on the right one. */
+  min-height: 148px;
+  border-radius: 14px;
   border: 1px solid var(--line);
   background: var(--card);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 4px;
+  align-items: stretch;
+  text-align: left;
+  gap: 0;
+  padding: 12px 12px 10px;
   overflow: hidden;
   cursor: pointer;
   transition:
@@ -179,46 +189,95 @@ h3 {
     border-color 0.15s ease;
 }
 .tile:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lift);
+  border-color: var(--brand);
 }
 .tile.empty {
   background: transparent;
   border-style: dashed;
   cursor: default;
+  align-items: center;
+  justify-content: center;
 }
 .tile.empty:hover {
   transform: none;
   box-shadow: none;
+  border-color: var(--line);
+}
+
+/* Hidden while the genie is standing on this tile — he sits in its place. */
+.tile.has-genie .tile-rank {
+  opacity: 0;
 }
 .tile-rank {
   position: absolute;
-  top: 3px;
-  left: 5px;
-  font-size: 8.5px;
+  top: 9px;
+  right: 10px;
+  font-size: 10.5px;
   font-weight: 700;
   color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
 }
 .tile-mark {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
   color: #fff;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
+  flex: none;
 }
 .tile-name {
-  font-size: 8.5px;
-  font-weight: 600;
-  text-align: center;
-  line-height: 1.1;
-  max-width: 100%;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.2;
   overflow: hidden;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+.tile-reward {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--ink-soft);
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* Bid and clicks sit on one baseline at the foot of the tile. */
+.tile-stats {
+  margin-top: auto;
+  padding-top: 8px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  border-top: 1px solid var(--line);
+}
+.tile-bid {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.tile-clicks {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.tile-out {
+  position: absolute;
+  inset: auto 10px 46px auto;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--warn);
 }
 
 /**
@@ -229,10 +288,12 @@ h3 {
 .genie {
   position: absolute;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  padding-bottom: 2px;
-  font-size: 28px;
+  /* Top-right, over the rank badge — the only thing on a tile the grid
+     already tells you, so he covers nothing the brand is paying to show. */
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 4px 6px 0 0;
+  font-size: 34px;
   line-height: 1;
   pointer-events: none;
   z-index: 3;
@@ -245,10 +306,25 @@ h3 {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  border-radius: 14px;
   border: 2px solid var(--brand);
-  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 16%, transparent);
+}
+/* A scrim under him so he reads over whatever the tile says there. */
+.genie::after {
+  content: "";
+  position: absolute;
+  right: 2px;
+  top: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--card) 45%, transparent 72%);
+}
+.genie > span {
+  position: relative;
+  z-index: 1;
 }
 .genie.hop {
   animation: hop 0.22s ease-in-out;

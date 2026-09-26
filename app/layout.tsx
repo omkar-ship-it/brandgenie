@@ -12,15 +12,24 @@ export const metadata: Metadata = {
   description: "Brands bid for the board. One round a day decides who you walk away with.",
 };
 
-const LINKS = [
+// The two sides of the product get different doors. A signed-out visitor
+// sees the customer set plus the way in for brands.
+const CUSTOMER_LINKS = [
   { href: "/", label: "Board" },
   { href: "/wish", label: "Wishes" },
   { href: "/rewards", label: "My rewards" },
-  { href: "/brand", label: "For brands" },
 ];
+const MERCHANT_LINKS = [
+  { href: "/", label: "Board" },
+  { href: "/brand", label: "My tile" },
+  { href: "/wish", label: "Wishes" },
+];
+const GUEST_LINKS = [...CUSTOMER_LINKS, { href: "/brand", label: "For brands" }];
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const user = await getSessionUser();
+  const isMerchant = user?.role === "merchant";
+  const links = !user ? GUEST_LINKS : isMerchant ? MERCHANT_LINKS : CUSTOMER_LINKS;
 
   return (
     <html lang="en" className={`${inter.variable} ${mono.variable} h-full`}>
@@ -36,7 +45,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             BrandGenie
           </Link>
           <div className="flex flex-wrap items-center gap-1">
-            {LINKS.map((l) => (
+            {links.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}
@@ -49,6 +58,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <div className="ml-auto flex items-center gap-2 text-[12.5px]">
             {user ? (
               <>
+                <span
+                  className="pill hidden sm:inline-flex"
+                  style={{
+                    background: isMerchant ? "var(--gold)" : "var(--sunk)",
+                    color: isMerchant ? "#fff" : "var(--ink-soft)",
+                  }}
+                >
+                  {isMerchant ? "🏪 Brand" : "🎁 Player"}
+                </span>
                 <span className="hidden text-ink-soft sm:inline">{user.email}</span>
                 <form action="/api/auth/logout" method="post">
                   <button className="btn btn-ghost px-3 py-1.5 text-[12.5px]">Sign out</button>

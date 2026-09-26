@@ -76,6 +76,19 @@ Literally that minute — 11:11am and 11:11pm. The browser countdown is a hint;
 `isWishWindowOpen()` is re-checked server-side in the route, so a clock-skewed
 or tampered client gets a 403.
 
+**Customers and merchants are different accounts.** `users.role` is picked at
+sign-up ("Play & win" vs "List my brand") and decides the nav and where you
+land after signing in — merchants go to `/brand`, customers to the board. A
+customer who later lists a brand is promoted to merchant; nobody is ever
+demoted, so a merchant who signs in on the customer side keeps their console.
+The server's returned role wins over whatever the form said.
+
+**Tile clicks are demo-grade, deliberately.** `brands.clicks` counts someone
+opening a brand's card, incremented by `POST /api/brands/click` with no session
+and no dedupe — it's the engagement number a brand is buying a position for,
+and it's only as honest as the visitor. If it ever backs pricing, move it to a
+`brand_views` table with a session and timestamp so repeats can be collapsed.
+
 **Board order is derived, never stored.** `getBoard()` sorts live by
 `bid_paise desc, bid_at asc` and assigns positions 1..50 on read. So a new bid
 re-ranks everyone with no gaps and no backfill job. `bid_at` breaks ties in
