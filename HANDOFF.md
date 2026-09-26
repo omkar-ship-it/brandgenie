@@ -164,6 +164,17 @@ icons and accent colours.
 Local Postgres database `brandgenie`, schema pushed, 20 brands seeded. Lint
 clean, production build clean.
 
+**Production was verified the same way on 2026-09-26** at
+https://brandgenie-blush.vercel.app — a round played and won, a second refused
+with 409, gift sent, the giver's redeem refused, the 11:11 gate returning 403,
+the claim page rendering the reward, and MSG91 accepting an OTP send. The test
+user was deleted and the reward stock it consumed was restored afterwards.
+
+To drive live flows without inbox access, mint a session directly:
+`insert into sessions (user_id, expires_at) values (<id>, now() + interval '1 hour') returning id`,
+then send it as the `bg_session` cookie. Strip whitespace off the psql output —
+a stray newline makes the cookie silently invalid and every call returns empty.
+
 Driven end to end via the API with a cookie jar (script was throwaway; the
 sequence is what matters):
 
@@ -196,9 +207,21 @@ re-shoot if needed.
 
 **Blocking the Vercel deploy:**
 
-1. **Neon database.** Create it, set `DATABASE_URL` in Vercel, run
-   `npm run db:push` once against it. Nothing works without this — every page
-   degrades to an empty state, which is worse than an error for a demo.
+1. ~~**Neon database.**~~ **Done 2026-09-26.** Vercel-managed Neon resource
+   `brandgenie-db`, free plan, region `ap-southeast-1` (Singapore), connected
+   to production/preview/development — it injects `DATABASE_URL` and
+   `POSTGRES_URL` as non-sensitive vars. Schema pushed, demo data seeded, and
+   all flows verified against the live site. Functions are pinned to `sin1` in
+   `vercel.json` to sit next to it; they defaulted to `iad1`, which put the
+   Pacific between every query and its database.
+
+   Two traps, both already paid for: a hand-set **Sensitive** `DATABASE_URL`
+   blocked the integration from connecting *and* never reached the runtime
+   (sensitive vars are withheld at build time), so the live site reported no
+   database while the dashboard showed the var set. And `drizzle.config.ts`
+   loaded `.env.local` unconditionally, which silently redirected a production
+   push to localhost — it now only loads the file when no `DATABASE_URL` is
+   already in the environment.
 2. **MSG91 gift template doesn't exist yet.** OTP email is done (2026-09-26):
    template id `brandgenie`, on the same MSG91 account as LetterMail, sending
    from `otp@mail.loyalgenie.in`. Its merge tag is `{{OTP}}` — **not**
