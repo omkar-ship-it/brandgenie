@@ -95,7 +95,7 @@ export default async function BoardPage() {
             order, never better odds — the genie walks the same board for everyone.
           </p>
         </div>
-        <Link href={bidHref} className="btn btn-bid">
+        <Link href={bidHref} className="btn btn-primary">
           {isMerchant ? "📈 Raise your bid" : "Bid for a spot"}
         </Link>
       </aside>

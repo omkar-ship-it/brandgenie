@@ -81,7 +81,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 </Link>
                 <Link
                   href="/login?next=/brand&as=merchant"
-                  className="btn btn-bid px-4 py-1.5 text-[12.5px]"
+                  className="btn btn-primary px-4 py-1.5 text-[12.5px]"
                 >
                   {/* One flex item, so .btn's gap doesn't open up mid-label. */}
                   <span>
