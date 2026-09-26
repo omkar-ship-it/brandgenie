@@ -201,7 +201,11 @@ re-shoot if needed.
    degrades to an empty state, which is worse than an error for a demo.
 2. **MSG91 gift template doesn't exist yet.** OTP email is done (2026-09-26):
    template id `brandgenie`, on the same MSG91 account as LetterMail, sending
-   from `otp@mail.loyalgenie.in` — a live send to a real inbox returned 2xx.
+   from `otp@mail.loyalgenie.in`. Its merge tag is `{{OTP}}` — **not**
+   `{{OTP_CODE}}` like LetterMail's; the first send arrived with a blank code
+   because of it. Template bodies can be read from the API rather than the
+   console: `GET /api/v5/email/template-versions?template_id=<id>` with the
+   auth key, after finding the id via `GET /api/v5/email/templates`.
    The gift template still needs creating in the MSG91 console with merge tags
    `sender_name`, `reward`, `claim_link`, then `MSG91_GIFT_TEMPLATE_ID` set.
    Until then gift claim links only appear in the server log — fine for a
@@ -254,6 +258,11 @@ only a screenshot settles the second one.
 **`playedToday` comes from the server and goes stale in-tab.** After a round
 finishes, the button state has to come from local state too, or the player can
 click again and get a 409 in the face.
+
+**A merge-tag mismatch fails silently.** MSG91 returns 2xx and sends an email
+with a blank where the variable should be. "The API accepted it" is not
+evidence the email is right — only reading the inbox is. Pull the template
+body from the API and match the tag exactly.
 
 **Small ones:** HTML entities inside JS string literals print literally — use
 real `’` characters; JSX drops the space between `{expr}` and a following

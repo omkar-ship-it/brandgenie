@@ -46,15 +46,17 @@ async function sendMsg91TemplateEmail(opts: {
 }
 
 /**
- * NOTE: MSG91 merge-tag names are exactly whatever text was typed when the
- * tag was inserted in that template's editor — LetterMail's OTP template uses
- * {{OTP_CODE}}. Keep this in sync with the real template.
+ * NOTE: MSG91 merge-tag names are exactly whatever text was typed into that
+ * template's editor, and a mismatch is silent — MSG91 returns 2xx and the
+ * email arrives with a blank where the value should be. The `brandgenie`
+ * template uses {{OTP}} (LetterMail's uses {{OTP_CODE}}, hence the trap).
+ * Check the live template before changing this.
  */
 export async function sendOtpEmail(to: string, code: string): Promise<SendResult> {
   return sendMsg91TemplateEmail({
     to,
     templateId: process.env.MSG91_EMAIL_TEMPLATE_ID,
-    variables: { OTP_CODE: code },
+    variables: { OTP: code },
     logLabel: "otp",
     devFallbackMessage: `login code for ${to} is ${code}`,
   });
