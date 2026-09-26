@@ -73,9 +73,22 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 </form>
               </>
             ) : (
-              <Link href="/login" className="btn btn-primary px-4 py-1.5 text-[12.5px]">
-                Sign in
-              </Link>
+              <>
+                {/* Sign-in stays reachable, but the prominent corner button is
+                    the merchant one — this board is pitched at brands. */}
+                <Link href="/login" className="px-1 text-ink-soft hover:text-ink hover:underline">
+                  Sign in
+                </Link>
+                <Link
+                  href="/login?next=/brand&as=merchant"
+                  className="btn btn-bid px-4 py-1.5 text-[12.5px]"
+                >
+                  {/* One flex item, so .btn's gap doesn't open up mid-label. */}
+                  <span>
+                    🏪 Bid<span className="hidden sm:inline"> for a spot</span>
+                  </span>
+                </Link>
+              </>
             )}
           </div>
         </nav>
