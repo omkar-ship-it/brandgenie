@@ -1,4 +1,4 @@
-# BrandGenie
+# LoyalGenie
 
 Brands bid for one of 50 places on a board. Once a day a genie walks that board
 and stops on a brand, and whoever woke him walks away with that brand's reward.
@@ -79,7 +79,7 @@ Import the repo, then set these environment variables:
 | `MSG91_AUTH_KEY` | for real email | Leave unset and codes go to the server log |
 | `MSG91_EMAIL_DOMAIN` | for real email | Verified sending domain |
 | `MSG91_FROM_EMAIL` | for real email | |
-| `MSG91_FROM_NAME` | no | Defaults to "BrandGenie" |
+| `MSG91_FROM_NAME` | no | Defaults to "LoyalGenie" |
 | `MSG91_EMAIL_TEMPLATE_ID` | for real email | OTP template, merge tag `{{OTP_CODE}}` |
 | `MSG91_GIFT_TEMPLATE_ID` | for gift email | Merge tags `{{sender_name}}`, `{{reward}}`, `{{claim_link}}` |
 

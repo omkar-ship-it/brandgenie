@@ -8,7 +8,7 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const mono = IBM_Plex_Mono({ variable: "--font-mono-face", subsets: ["latin"], weight: ["400", "600"] });
 
 export const metadata: Metadata = {
-  title: "BrandGenie",
+  title: "LoyalGenie",
   description: "Brands bid for the board. One round a day decides who you walk away with.",
 };
 
@@ -42,7 +42,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             >
               🧞
             </span>
-            BrandGenie
+            LoyalGenie
           </Link>
           <div className="flex flex-wrap items-center gap-1">
             {links.map((l) => (

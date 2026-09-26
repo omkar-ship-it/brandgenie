@@ -57,7 +57,7 @@ async function signIn(label, email, role) {
   ok(`auth: ${label} signs in as ${role}`, res.ok && data.role === role, `role=${data.role}`);
 }
 
-console.log(`\n=== BrandGenie flow test — ${BASE}\n`);
+console.log(`\n=== LoyalGenie flow test — ${BASE}\n`);
 
 // ---------------------------------------------------------------- auth
 await signIn("winner", `t-win-${stamp}@brandgenie.test`, "customer");

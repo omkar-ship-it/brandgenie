@@ -134,7 +134,7 @@ export function BrandConsole({
       order_id: order.orderId,
       amount: order.amountPaise,
       currency: "INR",
-      name: "BrandGenie",
+      name: "LoyalGenie",
       description: `Board bid — ${order.brandName}`,
       prefill: { email: order.email },
       theme: { color: "#6d3bef" },

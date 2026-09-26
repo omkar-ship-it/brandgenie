@@ -1,4 +1,4 @@
-# BrandGenie — project context
+# LoyalGenie — project context
 
 Written 2026-09-25, at the end of the session that built the MVP. The README
 is the public-facing doc; this one is the working context: why things are the
@@ -9,7 +9,12 @@ hit so nobody re-hits them.
 
 ## 1. Where this came from
 
-BrandGenie is the second repo in this thread of work.
+LoyalGenie is the second repo in this thread of work. It was built as
+"BrandGenie" and renamed on 2026-09-26; the rename is in-app only, so the repo,
+the Vercel project, the deployed URL, the `bg_session` cookie and the
+`@brandgenie.test` seed addresses all still carry the old name. Don't "fix"
+those — they're identifiers, not branding, and changing them costs a
+redeployment and everyone's session for no user-visible gain.
 
 **ViralGenie** (`github.com/omkar-ship-it/viralgenie`, `~/Documents/viralgenie`)
 was the exploratory prototype — roughly twelve commits of adapting outbid.lol's
@@ -17,7 +22,7 @@ pay-to-rank mechanic onto LoyalGenie. It accumulated a lot: rotating brand
 grids, a games library, wish upvotes, category leaderboards, two A/B'd
 Brandboard layouts. It still exists and still runs. Nothing here depends on it.
 
-**BrandGenie** (this repo) is a deliberate restart with a narrow brief: the
+**LoyalGenie** (this repo) is a deliberate restart with a narrow brief: the
 thing you put in front of a brand to get them to sign up. The scope was set
 explicitly — *no landing page, no explainer copy*. Brands bid and land on the
 grid; customers get one round a day; both authenticate with email OTP; rewards
