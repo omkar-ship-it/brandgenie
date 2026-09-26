@@ -190,6 +190,20 @@ with 409, gift sent, the giver's redeem refused, the 11:11 gate returning 403,
 the claim page rendering the reward, and MSG91 accepting an OTP send. The test
 user was deleted and the reward stock it consumed was restored afterwards.
 
+**`npm run test:flows` is the suite** (`scripts/flowtest.mjs`) — 42 assertions
+across auth, the round, redemption, gifting/claiming, the wish gate, brand
+listing, bidding and click tracking. Default target is localhost, reading OTP
+codes from the dev log. Against production, set both `BASE` and `PGURL` and it
+mints sessions through psql instead:
+
+```bash
+npm run test:flows                                   # local, 42/42
+BASE=https://brandgenie-blush.vercel.app PGURL=... npm run test:flows
+```
+
+It leaves test users named `t-%@brandgenie.test` behind — delete those rows and
+top the consumed reward stock back up afterwards.
+
 To drive live flows without inbox access, mint a session directly:
 `insert into sessions (user_id, expires_at) values (<id>, now() + interval '1 hour') returning id`,
 then send it as the `bg_session` cookie. Strip whitespace off the psql output —
