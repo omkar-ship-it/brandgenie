@@ -27,7 +27,7 @@ async function sendMsg91TemplateEmail(opts: {
       headers: { authkey: authKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         recipients: [{ to: [{ email: opts.to }], variables: opts.variables }],
-        from: { email: fromEmail, name: process.env.MSG91_FROM_NAME || "LoyalGenie" },
+        from: { email: fromEmail, name: process.env.MSG91_FROM_NAME || BRAND_NAME },
         domain,
         template_id: opts.templateId,
       }),
@@ -45,18 +45,29 @@ async function sendMsg91TemplateEmail(opts: {
   }
 }
 
+export const BRAND_NAME = "LoyalGenie";
+
 /**
  * NOTE: MSG91 merge-tag names are exactly whatever text was typed into that
  * template's editor, and a mismatch is silent — MSG91 returns 2xx and the
- * email arrives with a blank where the value should be. The `brandgenie`
- * template uses {{OTP}} (LetterMail's uses {{OTP_CODE}}, hence the trap).
- * Check the live template before changing this.
+ * email still arrives, with a blank where the value should be. Every template
+ * on this account names them differently: `loyalgenie_otp` uses {{otp}} and
+ * {{company_name}}, `brandgenie` used {{OTP}}, LetterMail's uses {{OTP_CODE}}.
+ * Read the live template before changing any of this.
  */
 export async function sendOtpEmail(to: string, code: string): Promise<SendResult> {
   return sendMsg91TemplateEmail({
     to,
     templateId: process.env.MSG91_EMAIL_TEMPLATE_ID,
-    variables: { OTP: code },
+    variables: {
+      otp: code,
+      company_name: BRAND_NAME,
+      // The template's subject is `Your {{LoyalGenie}} OTP` — the brand name
+      // was typed into the tag itself by mistake, so the subject renders as
+      // "Your  OTP" unless we feed it. Supplying it keeps the subject right
+      // until someone fixes the template; harmless once they do.
+      LoyalGenie: BRAND_NAME,
+    },
     logLabel: "otp",
     devFallbackMessage: `login code for ${to} is ${code}`,
   });
