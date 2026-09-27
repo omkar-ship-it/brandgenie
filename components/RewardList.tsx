@@ -12,6 +12,10 @@ export type RewardCard = {
   category: string;
   expiresAt: string;
   redeemedAt: string | null;
+  redemptionType: string;
+  instructions: string;
+  redeemUrl: string | null;
+  couponCode: string | null;
   giftedToEmail: string | null;
   wasGifted: boolean;
 };
@@ -21,6 +25,7 @@ type Counter = { code: string; label: string; brandName: string; endsAt: number 
 /** Anything redeemed in the last 30s is still live at the counter. */
 function openCounter(rewards: RewardCard[]): Counter | null {
   for (const r of rewards) {
+    if (r.redemptionType !== "counter") continue;
     if (r.status !== "redeemed" || !r.redeemedAt) continue;
     const endsAt = new Date(r.redeemedAt).getTime() + REDEEM_WINDOW_SECONDS * 1000;
     if (endsAt > Date.now()) {
@@ -69,6 +74,7 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
     setBusy("");
     setConfirming(null);
     if (!res.ok) return setError(data.error ?? "Couldn't redeem that.");
+    if (!data.windowSeconds) return window.location.reload();
     setCounter({
       code: data.code,
       label: data.label,
@@ -126,12 +132,38 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
                   <Badge status={r.status} expired={expired} wasGifted={r.wasGifted} />
                 </div>
 
+                {/* An online reward's value is the brand's own code, visible
+                    straight away — there's no counter to show it at, and
+                    hiding it behind a tap would only cost the customer a step. */}
                 <div className="mt-4 flex items-center justify-between rounded-lg bg-sunk px-3 py-2.5">
-                  <span className="mono text-[15px] font-semibold tracking-wider">{r.code}</span>
+                  <span className="mono text-[15px] font-semibold tracking-wider">
+                    {r.redemptionType === "online" ? (r.couponCode ?? r.code) : r.code}
+                  </span>
                   <span className={`mono text-[11.5px] ${expired ? "text-warn" : "text-ink-soft"}`}>
                     {expired ? `expired ${dateFmt(r.expiresAt)}` : `${left}d left · ${dateFmt(r.expiresAt)}`}
                   </span>
                 </div>
+
+                <div className="mt-2 flex items-center gap-2 text-[11px] text-ink-soft">
+                  <span className="pill border border-line">
+                    {r.redemptionType === "online" ? "🛒 Use online" : "🏪 At the counter"}
+                  </span>
+                  {r.redemptionType === "online" && r.couponCode && (
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard?.writeText(r.couponCode!).catch(() => {})}
+                      className="underline-offset-2 hover:underline"
+                    >
+                      Copy code
+                    </button>
+                  )}
+                </div>
+
+                {r.instructions && (
+                  <p className="mt-3 rounded-lg border border-line p-3 text-[12.5px] text-ink-soft">
+                    {r.instructions}
+                  </p>
+                )}
 
                 {r.status === "gifted" && (
                   <p className="mt-3 text-[12.5px] text-ink-soft">
@@ -143,13 +175,33 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
 
                 {usable && (
                   <div className="mt-4 grid grid-cols-2 gap-2">
-                    <button onClick={() => setConfirming(r)} className="btn btn-primary">
-                      Redeem
-                    </button>
+                    {r.redemptionType === "online" ? (
+                      r.redeemUrl ? (
+                        <a href={r.redeemUrl} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
+                          Use it now ↗
+                        </a>
+                      ) : (
+                        <button onClick={() => setConfirming(r)} className="btn btn-primary">
+                          Mark as used
+                        </button>
+                      )
+                    ) : (
+                      <button onClick={() => setConfirming(r)} className="btn btn-primary">
+                        Redeem
+                      </button>
+                    )}
                     <button onClick={() => setGiftFor(r)} className="btn btn-ghost">
                       🎁 Gift it
                     </button>
                   </div>
+                )}
+                {usable && r.redemptionType === "online" && r.redeemUrl && (
+                  <button
+                    onClick={() => setConfirming(r)}
+                    className="mt-2 w-full text-[11.5px] text-ink-soft underline underline-offset-2"
+                  >
+                    I&rsquo;ve used this one
+                  </button>
                 )}
               </div>
             </article>
@@ -168,17 +220,39 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
         >
           <div className="sheet p-6 text-center">
             <div className="text-[30px]">{confirming.icon}</div>
-            <h2 className="mt-2 text-[19px] font-semibold">Are you at the counter?</h2>
-            <p className="mx-auto mt-1 max-w-[34ch] text-[13.5px] text-ink-soft">
-              Your code shows for {REDEEM_WINDOW_SECONDS} seconds for staff to check, and{" "}
-              <strong>{confirming.label}</strong> is spent the moment you tap. Don&rsquo;t do this early.
-            </p>
+            {confirming.redemptionType === "online" ? (
+              <>
+                <h2 className="mt-2 text-[19px] font-semibold">Mark this as used?</h2>
+                <p className="mx-auto mt-1 max-w-[36ch] text-[13.5px] text-ink-soft">
+                  We can&rsquo;t see what happens inside {confirming.brandName}&rsquo;s checkout, so this is just
+                  you telling us. It tidies your rewards and helps the brand — it doesn&rsquo;t change the code.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="mt-2 text-[19px] font-semibold">Are you at the counter?</h2>
+                <p className="mx-auto mt-1 max-w-[34ch] text-[13.5px] text-ink-soft">
+                  Your code shows for {REDEEM_WINDOW_SECONDS} seconds for staff to check, and{" "}
+                  <strong>{confirming.label}</strong> is spent the moment you tap. Don&rsquo;t do this early.
+                </p>
+              </>
+            )}
+
+            {/* The brand's own words, at the point of no return. */}
+            {confirming.instructions && (
+              <p className="mt-4 rounded-lg bg-sunk p-3 text-left text-[12.5px]">{confirming.instructions}</p>
+            )}
+
             <button
               onClick={() => redeem(confirming.code)}
               disabled={busy === confirming.code}
               className="btn btn-primary mt-5 w-full"
             >
-              {busy === confirming.code ? "…" : `Show the code — ${REDEEM_WINDOW_SECONDS}s`}
+              {busy === confirming.code
+                ? "…"
+                : confirming.redemptionType === "online"
+                  ? "Yes, I've used it"
+                  : `Show the code — ${REDEEM_WINDOW_SECONDS}s`}
             </button>
             <button onClick={() => setConfirming(null)} className="btn btn-ghost mt-2 w-full">
               Not yet

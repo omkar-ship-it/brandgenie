@@ -12,6 +12,9 @@ export type BrandDraft = {
   instagram: string;
   rewardLabel: string;
   rewardIcon: string;
+  redemptionType: string;
+  instructions: string;
+  redeemUrl: string;
   totalStock: number;
   validDays: number;
 };
@@ -44,6 +47,7 @@ export function BrandConsole({
   hasBrand,
   logoUrl: initialLogo,
   canUploadLogo,
+  coupons: initialCoupons,
   currentBidPaise,
   position,
   suggestedPaise,
@@ -53,6 +57,7 @@ export function BrandConsole({
   hasBrand: boolean;
   logoUrl: string | null;
   canUploadLogo: boolean;
+  coupons: { total: number; unused: number };
   currentBidPaise: number;
   position: number | null;
   suggestedPaise: number;
@@ -68,6 +73,34 @@ export function BrandConsole({
   const [paying, setPaying] = useState(false);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [logoBusy, setLogoBusy] = useState(false);
+  const [coupons, setCoupons] = useState(initialCoupons);
+  const [codeText, setCodeText] = useState("");
+  const [codeBusy, setCodeBusy] = useState(false);
+  const online = form.redemptionType === "online";
+
+  async function uploadCodes() {
+    setCodeBusy(true);
+    setError("");
+    const res = await fetch("/api/brand/coupons", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ codes: codeText }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setCodeBusy(false);
+    if (!res.ok) return setError(data.error ?? "Couldn't add those codes.");
+    setCoupons({ total: data.total, unused: data.unused });
+    setCodeText("");
+    setNotice(`${data.unused} codes ready to give away.`);
+  }
+
+  async function clearCodes() {
+    setCodeBusy(true);
+    const res = await fetch("/api/brand/coupons", { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    setCodeBusy(false);
+    if (res.ok) setCoupons({ total: data.total, unused: data.unused });
+  }
 
   async function uploadLogo(file: File) {
     setLogoBusy(true);
@@ -292,6 +325,38 @@ export function BrandConsole({
         </div>
 
         <h3 className="mt-7 text-[15px] font-semibold">What you&rsquo;re giving away</h3>
+
+        {/* The type decides everything downstream, so it's asked first. */}
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {[
+            {
+              value: "counter",
+              icon: "🏪",
+              title: "At your counter",
+              blurb: "Staff see a live code with a 30-second timer. Nothing to set up.",
+            },
+            {
+              value: "online",
+              icon: "🛒",
+              title: "On your website",
+              blurb: "We hand out one of your own discount codes per win.",
+            },
+          ].map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              onClick={() => set("redemptionType", t.value)}
+              aria-pressed={form.redemptionType === t.value}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                form.redemptionType === t.value ? "border-brand bg-sunk" : "border-line bg-bg hover:border-brand"
+              }`}
+            >
+              <span className="text-[18px]">{t.icon}</span>
+              <span className="mt-1 block text-[13.5px] font-semibold">{t.title}</span>
+              <span className="mt-0.5 block text-[11.5px] leading-snug text-ink-soft">{t.blurb}</span>
+            </button>
+          ))}
+        </div>
         <div className="mt-3 grid gap-4 sm:grid-cols-[64px_1fr]">
           <Field label="Icon">
             <input
@@ -309,15 +374,21 @@ export function BrandConsole({
               placeholder="Free cappuccino"
             />
           </Field>
-          <Field label="How many">
-            <input
-              className="input"
-              type="number"
-              min={1}
-              max={500}
-              value={form.totalStock}
-              onChange={(e) => set("totalStock", Number(e.target.value))}
-            />
+          {/* The caption goes in the label, not inside the box — this column
+              is narrow and two items in the field collided. */}
+          <Field label={online ? "How many (your codes)" : "How many"}>
+            {online ? (
+              <div className="input mono text-ink-soft">{coupons.unused}</div>
+            ) : (
+              <input
+                className="input"
+                type="number"
+                min={1}
+                max={500}
+                value={form.totalStock}
+                onChange={(e) => set("totalStock", Number(e.target.value))}
+              />
+            )}
           </Field>
           <Field label="Valid for (days after winning)">
             <input
@@ -330,6 +401,71 @@ export function BrandConsole({
             />
           </Field>
         </div>
+
+        <div className="mt-4 grid gap-4">
+          <Field label={online ? "Where do they use it?" : "What should staff do?"}>
+            <input
+              className="input"
+              maxLength={220}
+              value={form.instructions}
+              onChange={(e) => set("instructions", e.target.value)}
+              placeholder={
+                online
+                  ? "Paste at checkout. One per customer, not with other offers."
+                  : "Show this screen at the till before ordering."
+              }
+            />
+          </Field>
+
+          {online && (
+            <Field label="Link to use it (optional)">
+              <input
+                className="input"
+                value={form.redeemUrl}
+                onChange={(e) => set("redeemUrl", e.target.value)}
+                placeholder="https://yourshop.example/cart"
+              />
+            </Field>
+          )}
+        </div>
+
+        {online && (
+          <div className="mt-5 rounded-xl border border-line p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h4 className="text-[13.5px] font-semibold">Your discount codes</h4>
+              <span className="mono text-[11.5px] text-ink-soft">
+                {coupons.unused} unused · {coupons.total} total
+              </span>
+            </div>
+            <p className="mt-1 text-[12px] text-ink-soft">
+              Single-use codes from your own store, one per line. Each winner gets one nobody else can use — that
+              is what stops a code being screenshotted and passed around.
+            </p>
+            <textarea
+              className="input mono mt-3 h-24 resize-y"
+              value={codeText}
+              onChange={(e) => setCodeText(e.target.value)}
+              placeholder={"GENIE-4KJ2\nGENIE-9XM1\nGENIE-2PQ7"}
+              disabled={!saved}
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={uploadCodes}
+                disabled={codeBusy || !saved || codeText.trim().length === 0}
+                className="btn btn-primary"
+              >
+                {codeBusy ? "Adding…" : "Add codes"}
+              </button>
+              {coupons.unused > 0 && (
+                <button type="button" onClick={clearCodes} disabled={codeBusy} className="btn btn-ghost">
+                  Clear unused
+                </button>
+              )}
+            </div>
+            {!saved && <p className="mt-2 text-[12px] text-warn">Save your listing first.</p>}
+          </div>
+        )}
 
         <div className="mt-6 flex items-center gap-3">
           <button onClick={save} disabled={saving} className="btn btn-primary">

@@ -1,6 +1,6 @@
 import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { db, hasDb } from "./db";
-import { brandClicks, grants } from "./db/schema";
+import { brandClicks, couponCodes, grants } from "./db/schema";
 import { dayKey } from "./rules";
 
 export type DayRow = {
@@ -14,6 +14,8 @@ export type BrandStats = {
   today: DayRow;
   days: DayRow[];
   totals: { clicks: number; won: number; redeemed: number; gifted: number };
+  /** Online redemptions are the customer saying so, not something we saw. */
+  redemptionType: string;
 };
 
 const EMPTY_DAY = (day: string): DayRow => ({ day, clicks: 0, won: 0, redeemed: 0 });
@@ -26,7 +28,11 @@ const EMPTY_DAY = (day: string): DayRow => ({ day, clicks: 0, won: 0, redeemed: 
  * on two different dates — a reward won on Monday and redeemed on Friday
  * belongs to both days, and joining would double-count it.
  */
-export async function getBrandStats(brandId: string, days = 7): Promise<BrandStats> {
+export async function getBrandStats(
+  brandId: string,
+  redemptionType = "counter",
+  days = 7
+): Promise<BrandStats> {
   const today = dayKey();
   const window: string[] = [];
   for (let i = days - 1; i >= 0; i--) {
@@ -90,6 +96,7 @@ export async function getBrandStats(brandId: string, days = 7): Promise<BrandSta
     today: rows.get(today) ?? EMPTY_DAY(today),
     days: window.map((d) => rows.get(d)!),
     totals,
+    redemptionType,
   };
 }
 
@@ -108,4 +115,17 @@ export async function getRecentGrants(brandId: string, limit = 8) {
     .where(eq(grants.brandId, brandId))
     .orderBy(desc(grants.createdAt))
     .limit(limit);
+}
+
+/** Unclaimed codes are an online reward's live stock. */
+export async function getCouponCounts(rewardId: string) {
+  if (!hasDb || !db) return { total: 0, unused: 0 };
+  const [row] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      unused: sql<number>`count(*) filter (where ${couponCodes.assignedGrantId} is null)::int`,
+    })
+    .from(couponCodes)
+    .where(eq(couponCodes.rewardId, rewardId));
+  return { total: Number(row?.total ?? 0), unused: Number(row?.unused ?? 0) };
 }

@@ -18,6 +18,13 @@ const ok = (name, cond, extra = "") => {
   console.log(`${cond ? "  ok  " : "FAIL  "}${name}${extra ? "  — " + extra : ""}`);
 };
 
+// Flattened to one line: JSON.stringify turns newlines into literal \n,
+// which psql receives as backslash-n and refuses to parse.
+const psqlRun = (sql) =>
+  execSync(`psql "$PGURL" -q -c ${JSON.stringify(sql.replace(/\s+/g, " ").trim())}`, {
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+
 const jar = new Map();
 async function call(path, { method = "GET", body, as } = {}) {
   const res = await fetch(BASE + path, {
@@ -166,6 +173,86 @@ ok("board: the new brand appears on the live board", boardHtml.data.raw === unde
 const page = await (await fetch(BASE + "/")).text();
 ok("board: brand is rendered on the board", page.includes(`Test Brand ${stamp}`));
 
+// ---------------------------------------------------------------- online rewards
+console.log("\n-- online rewards & coupon batches");
+await signIn("shop", `t-shop-${stamp}@brandgenie.test`, "merchant");
+const onlineBrand = await call("/api/brand", {
+  method: "POST", as: "shop",
+  body: {
+    name: `Online Co ${stamp}`, category: "Shopping", tagline: "Ships everywhere",
+    rewardLabel: "25% off your first order", rewardIcon: "🛒",
+    redemptionType: "online", instructions: "Paste at checkout. One per customer.",
+    redeemUrl: "https://onlineco.example/cart", totalStock: 99, validDays: 30,
+  },
+});
+ok("online: listing saves as an online reward", onlineBrand.status === 200);
+
+const noStock = await call("/api/brand/coupons", { as: "shop" });
+ok("online: starts with no stock until codes are added", noStock.data.unused === 0, JSON.stringify(noStock.data));
+
+const batch = await call("/api/brand/coupons", {
+  method: "POST", as: "shop",
+  body: { codes: `GEN-${stamp}-A\nGEN-${stamp}-B\nGEN-${stamp}-B\n  \nGEN-${stamp}-C` },
+});
+ok("online: batch uploads and de-duplicates", batch.status === 200 && batch.data.unused === 3,
+  `${batch.data.unused} unused of ${batch.data.total}`);
+
+const counterBrandCodes = await call("/api/brand/coupons", { method: "POST", as: "brand", body: { codes: "NOPE-1" } });
+ok("online: a counter reward can't take codes", counterBrandCodes.status === 400, counterBrandCodes.data.error);
+
+// take position #1 so the genie can only land here
+const o1 = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 90_000_00 }, as: "shop" });
+await call("/api/bids/verify", { method: "POST", body: { bidId: o1.data.bidId, orderId: o1.data.orderId }, as: "shop" });
+
+// The genie's landing is pseudo-random, so to test the online path reliably
+// we make THIS brand the only one with anything left — he walks past empty
+// shelves, so he has to stop here. Local only: it rewrites every reward's
+// stock, which is not something to do to a live board.
+//
+// The backup table is a real one, not TEMP: each psql call is its own
+// session and a temp table wouldn't survive to the restore.
+const canForce = Boolean(PSQL) && BASE.includes("localhost");
+// Restore on the way out whatever happens — an assertion throwing between
+// here and the restore would otherwise leave every brand's stock at zero.
+const restoreStock = () => {
+  if (!canForce) return;
+  psqlRun(
+    `update rewards r set remaining = k.remaining from _flowtest_keep k where k.id = r.id;
+     drop table if exists _flowtest_keep;`
+  );
+};
+if (canForce) {
+  process.on("exit", restoreStock);
+  psqlRun(
+    `drop table if exists _flowtest_keep;
+     create table _flowtest_keep as select id, remaining from rewards;
+     update rewards set remaining = 0
+      where brand_id not in (select id from brands where name = 'Online Co ${stamp}');`
+  );
+}
+
+await signIn("onlinewinner", `t-ow-${stamp}@brandgenie.test`, "customer");
+const op = await call("/api/play", { method: "POST", as: "onlinewinner" });
+const wonOnline = op.data.prize?.redemptionType === "online";
+ok(`online: a win carries one of the brand's codes${canForce ? "" : " (not forced — may land elsewhere)"}`,
+  canForce ? wonOnline && Boolean(op.data.prize?.couponCode) : !wonOnline || Boolean(op.data.prize?.couponCode),
+  op.data.prize ? `${op.data.prize.brandName} → ${op.data.prize.couponCode ?? "none"}` : "no prize");
+
+if (wonOnline) {
+  const after = await call("/api/brand/coupons", { as: "shop" });
+  ok("online: the claimed code leaves the pool", after.data.unused === 2, `${after.data.unused} left`);
+  const red = await call("/api/rewards/redeem", { method: "POST", body: { code: op.data.prize.code }, as: "onlinewinner" });
+  ok("online: marking used gives no counter window", red.status === 200 && red.data.windowSeconds === 0,
+    `window=${red.data.windowSeconds}`);
+  ok("online: instructions travel with the reward", red.data.instructions?.includes("checkout"), red.data.instructions);
+  ok("online: the customer gets the brand's code, not just ours",
+    Boolean(red.data.couponCode) && red.data.couponCode !== red.data.code,
+    `${red.data.couponCode} vs ${red.data.code}`);
+}
+
+restoreStock();
+if (canForce) process.off("exit", restoreStock);
+
 // ---------------------------------------------------------------- brand stats
 console.log("\n-- brand numbers");
 const st = await call("/api/brand/stats", { as: "brand" });
@@ -218,6 +305,23 @@ console.log("\n-- pages render");
 for (const path of ["/", "/login", "/brand", "/rewards", "/wish"]) {
   const res = await fetch(BASE + path, { headers: { Cookie: `bg_session=${jar.get("winner")}` } });
   ok(`page ${path}`, res.status === 200, String(res.status));
+}
+
+// ---------------------------------------------------------------- cleanup
+// The suite creates real brands (one bids its way to #1) and burns real
+// stock. Left behind they pile up on the board and make later runs flaky,
+// so it clears up after itself whenever it has database access.
+if (PSQL) {
+  psqlRun(`
+    update rewards r set remaining = least(r.total_stock, r.remaining + x.n)
+      from (select g.brand_id, count(*) n from grants g
+            join users u on u.id = g.user_id
+            where u.email like 't-%@brandgenie.test' group by g.brand_id) x
+      where r.brand_id = x.brand_id;
+    delete from brands where user_id in (select id from users where email like 't-%@brandgenie.test');
+    delete from users where email like 't-%@brandgenie.test';
+  `);
+  console.log("\n-- cleaned up test users, brands and stock");
 }
 
 console.log(`\n=== ${pass} passed, ${fail} failed\n`);

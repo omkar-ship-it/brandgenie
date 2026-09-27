@@ -32,11 +32,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "That reward has expired." }, { status: 409 });
   }
 
-  // Burning it here, not when the timer runs out: the countdown exists to
-  // prove to the person behind the counter that this is being redeemed right
-  // now rather than being a screenshot, so the reward has to be spent the
-  // moment they're shown it. `redeemedAt` anchors the countdown, so a refresh
-  // mid-window resumes it instead of restarting it.
+  // Two very different meanings depending on the reward.
+  //
+  // counter: burning it here, not when the timer runs out — the countdown
+  //   exists to prove to the person behind the counter that this is being
+  //   redeemed right now rather than being a screenshot, so it has to be
+  //   spent the moment they're shown it. `redeemedAt` anchors the countdown,
+  //   so a refresh mid-window resumes it instead of restarting it.
+  //
+  // online: we cannot see the moment a code is pasted into someone else's
+  //   checkout, so this is the customer telling us they've used it. It's
+  //   self-reported, and the brand's dashboard labels it as such rather than
+  //   passing it off as a confirmed redemption.
   const redeemedAt = new Date();
   await db
     .update(grants)
@@ -48,7 +55,13 @@ export async function POST(req: Request) {
     code: grant.code,
     label: grant.label,
     brandName: grant.brandName,
+    redemptionType: grant.redemptionType,
+    couponCode: grant.couponCode,
+    instructions: grant.instructions,
+    redeemUrl: grant.redeemUrl,
     redeemedAt: redeemedAt.toISOString(),
-    windowSeconds: REDEEM_WINDOW_SECONDS,
+    // Only a counter reward gets a live window; there's no one to show an
+    // online code to.
+    windowSeconds: grant.redemptionType === "counter" ? REDEEM_WINDOW_SECONDS : 0,
   });
 }

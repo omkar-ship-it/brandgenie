@@ -18,6 +18,9 @@ export type BoardEntry = {
   rewardId: string | null;
   rewardLabel: string | null;
   rewardIcon: string;
+  redemptionType: string;
+  instructions: string;
+  redeemUrl: string | null;
   remaining: number;
   validDays: number;
 };
@@ -45,6 +48,9 @@ export async function getBoard(): Promise<BoardEntry[]> {
       rewardId: rewards.id,
       rewardLabel: rewards.label,
       rewardIcon: rewards.icon,
+      redemptionType: rewards.redemptionType,
+      instructions: rewards.instructions,
+      redeemUrl: rewards.redeemUrl,
       remaining: rewards.remaining,
       validDays: rewards.validDays,
     })
@@ -69,6 +75,9 @@ export async function getBoard(): Promise<BoardEntry[]> {
     rewardId: r.rewardId,
     rewardLabel: r.rewardLabel,
     rewardIcon: r.rewardIcon ?? "🎁",
+    redemptionType: r.redemptionType ?? "counter",
+    instructions: r.instructions ?? "",
+    redeemUrl: r.redeemUrl,
     remaining: r.remaining ?? 0,
     validDays: r.validDays ?? 14,
   }));

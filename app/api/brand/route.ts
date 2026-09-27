@@ -23,6 +23,9 @@ export async function POST(req: Request) {
   const instagram = str(body?.instagram, 200) || null;
   const rewardLabel = str(body?.rewardLabel, 80);
   const rewardIcon = str(body?.rewardIcon, 8) || "🎁";
+  const redemptionType = body?.redemptionType === "online" ? "online" : "counter";
+  const instructions = str(body?.instructions, 220);
+  const redeemUrl = str(body?.redeemUrl, 300) || null;
   const totalStock = Math.max(1, Math.min(500, Number(body?.totalStock) || 25));
   const validDays = Math.max(1, Math.min(365, Number(body?.validDays) || DEFAULT_REWARD_VALID_DAYS));
 
@@ -52,17 +55,30 @@ export async function POST(req: Request) {
   }
 
   if (existing?.reward) {
-    // Raising the total tops up what's left rather than resetting it, so
-    // editing the listing can't quietly wipe out stock already promised.
-    const delta = totalStock - existing.reward.totalStock;
+    // An online reward's stock is its unclaimed coupon batch, so the
+    // number typed into the form is ignored for that type — the codes are
+    // the only source of truth.
+    const stockFields =
+      redemptionType === "online"
+        ? {}
+        : {
+            totalStock,
+            // Raising the total tops up what's left rather than resetting it,
+            // so editing the listing can't quietly wipe out stock already
+            // promised.
+            remaining: Math.max(0, existing.reward.remaining + Math.max(0, totalStock - existing.reward.totalStock)),
+          };
+
     await db
       .update(rewards)
       .set({
         label: rewardLabel,
         icon: rewardIcon,
-        totalStock,
+        redemptionType,
+        instructions,
+        redeemUrl,
         validDays,
-        remaining: Math.max(0, existing.reward.remaining + Math.max(0, delta)),
+        ...stockFields,
       })
       .where(eq(rewards.id, existing.reward.id));
   } else {
@@ -70,8 +86,12 @@ export async function POST(req: Request) {
       brandId,
       label: rewardLabel,
       icon: rewardIcon,
-      totalStock,
-      remaining: totalStock,
+      redemptionType,
+      instructions,
+      redeemUrl,
+      // An online reward starts with no stock until codes are uploaded.
+      totalStock: redemptionType === "online" ? 0 : totalStock,
+      remaining: redemptionType === "online" ? 0 : totalStock,
       validDays,
     });
   }

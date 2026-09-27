@@ -67,7 +67,19 @@ export const brands = pgTable("brands", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** What the brand gives away when the genie stops on them. */
+/**
+ * What the brand gives away when the genie stops on them.
+ *
+ * `redemptionType` decides everything downstream — what the customer sees,
+ * whether there's a timer, when the grant burns, and where stock comes from:
+ *
+ *   "counter" — shown to staff in person. Liveness is the proof, so the
+ *               reward burns the moment it's displayed. Stock is just a
+ *               number the brand sets.
+ *   "online"  — pasted into the brand's own checkout. We can't see the
+ *               moment it's used, so nothing burns on our side; the brand's
+ *               batch of single-use codes IS the stock.
+ */
 export const rewards = pgTable("rewards", {
   id: uuid("id").defaultRandom().primaryKey(),
   brandId: uuid("brand_id")
@@ -75,6 +87,13 @@ export const rewards = pgTable("rewards", {
     .references(() => brands.id, { onDelete: "cascade" }),
   label: text("label").notNull(),
   icon: text("icon").notNull().default("🎁"),
+  redemptionType: text("redemption_type").notNull().default("counter"),
+  // Shown on the reward card and, crucially, on the confirm sheet before a
+  // counter reward is burnt — the point of no return.
+  instructions: text("instructions").notNull().default(""),
+  // Where an online code gets used. Rendered as a button, never pasted
+  // into the instructions text.
+  redeemUrl: text("redeem_url"),
   totalStock: integer("total_stock").notNull().default(25),
   remaining: integer("remaining").notNull().default(25),
   validDays: integer("valid_days").notNull().default(14),
@@ -94,6 +113,28 @@ export const bids = pgTable("bids", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   paidAt: timestamp("paid_at", { withTimezone: true }),
 });
+
+/**
+ * A brand's own single-use discount codes, uploaded in a batch. One is
+ * claimed per win and never reused, which is what makes an online reward
+ * an actual reward rather than a coupon anyone can screenshot and share.
+ *
+ * Unassigned rows are the live stock for an online reward.
+ */
+export const couponCodes = pgTable(
+  "coupon_codes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    rewardId: uuid("reward_id")
+      .notNull()
+      .references(() => rewards.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    assignedGrantId: uuid("assigned_grant_id"),
+    assignedAt: timestamp("assigned_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("coupon_codes_reward_code_idx").on(t.rewardId, t.code)]
+);
 
 // ---------------------------------------------------------------- play
 
@@ -131,6 +172,14 @@ export const grants = pgTable("grants", {
   label: text("label").notNull(),
   icon: text("icon").notNull().default("🎁"),
   status: text("status").notNull().default("active"),
+  // Snapshotted at the moment it's won, like expiresAt — a brand editing
+  // their listing later must not change what someone already holds.
+  redemptionType: text("redemption_type").notNull().default("counter"),
+  instructions: text("instructions").notNull().default(""),
+  redeemUrl: text("redeem_url"),
+  // The brand's own code for an online reward. Null for counter rewards,
+  // where our `code` above is the whole proof.
+  couponCode: text("coupon_code"),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   giftedToEmail: text("gifted_to_email"),
   giftedAt: timestamp("gifted_at", { withTimezone: true }),

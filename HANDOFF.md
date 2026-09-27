@@ -85,6 +85,38 @@ the moment the customer taps, behind a confirm that says so. `grants.redeemedAt`
 anchors the window, so refreshing mid-countdown resumes it rather than
 restarting it, and reloading later shows the reward plainly as redeemed.
 
+**Rewards come in two kinds, and the type decides everything downstream.**
+`rewards.redemptionType` is `counter` or `online`, chosen by the brand:
+
+- **counter** — shown to staff in person. Liveness is the proof, so the grant
+  burns the moment it's displayed and the 30-second timer runs. Stock is just a
+  number the brand sets.
+- **online** — pasted into the brand's own checkout. We cannot see the moment a
+  code is used, so nothing burns on our side; "marked used" is the customer
+  telling us, and the dashboard labels it as a floor rather than a total.
+  The brand's batch of single-use codes **is** the stock — a single universal
+  code would leak instantly, so uniqueness per grant is the only real
+  protection. Uploading codes sets `totalStock`/`remaining` from the batch;
+  the "how many" field is ignored for this type.
+
+A win claims one coupon with a conditional update and only then links it to the
+grant, so two simultaneous rounds can't be handed the same code; if the batch
+turns out to be empty the stock decrement is given back.
+
+`redemptionType`, `instructions` and `redeemUrl` are **snapshotted onto the
+grant**, like `expiresAt` — a brand editing their listing must not change what
+someone already holds.
+
+**Redemption instructions show at the point of no return.** The brand's own
+words appear on the reward card *and* on the confirm sheet, because for a
+counter reward that tap is irreversible. The confirm sheet's wording is
+type-aware: asking "are you at the counter?" about an e-commerce code would
+have people burning rewards nowhere near a shop.
+
+**Not built yet:** a dispute path. If staff say "this doesn't work" the reward
+is already burnt with no recourse. Decide that before a real campaign, not
+after the first complaint.
+
 **Every reward expires.** Each brand sets `valid_days` per reward; the expiry
 is stamped onto the grant at the moment it's won, not read live from the
 brand's current setting — so a brand editing their listing can't retroactively
@@ -232,8 +264,14 @@ npm run test:flows                                   # local, 42/42
 BASE=https://brandgenie-blush.vercel.app PGURL=... npm run test:flows
 ```
 
-It leaves test users named `t-%@brandgenie.test` behind — delete those rows and
-top the consumed reward stock back up afterwards.
+It cleans up after itself when it has `PGURL`: test users, the brands they
+created (one bids its way to #1) and the stock their rounds consumed. Without
+`PGURL` that residue is left behind and later runs go flaky.
+
+Locally it also forces the genie onto the online test brand by zeroing every
+other brand's stock, restoring on the way out via a `process.on("exit")` hook —
+an assertion throwing mid-way would otherwise leave the whole board at zero
+stock. It refuses to do this against anything but localhost.
 
 To drive live flows without inbox access, mint a session directly:
 `insert into sessions (user_id, expires_at) values (<id>, now() + interval '1 hour') returning id`,

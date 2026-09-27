@@ -21,7 +21,11 @@ export function BrandStatsPanel({ stats }: { stats: BrandStats }) {
       <div className="mt-4 grid grid-cols-3 gap-3">
         <Today label="Tile opens" value={stats.today.clicks} total={stats.totals.clicks} />
         <Today label="Rewards won" value={stats.today.won} total={stats.totals.won} />
-        <Today label="Redeemed" value={stats.today.redeemed} total={stats.totals.redeemed} />
+        <Today
+          label={stats.redemptionType === "online" ? "Marked used" : "Redeemed"}
+          value={stats.today.redeemed}
+          total={stats.totals.redeemed}
+        />
       </div>
 
       <div className="mt-6">
@@ -38,6 +42,14 @@ export function BrandStatsPanel({ stats }: { stats: BrandStats }) {
           ))}
         </div>
       </div>
+
+      {stats.redemptionType === "online" && (
+        <p className="mt-5 text-[12.5px] text-ink-soft">
+          Your codes are used inside your own checkout, which we can&rsquo;t see — &ldquo;marked used&rdquo; is
+          customers telling us, so treat it as a floor, not a total. <strong>Rewards won</strong> is the number
+          that&rsquo;s exact.
+        </p>
+      )}
 
       {stats.totals.gifted > 0 && (
         <p className="mt-5 text-[12.5px] text-ink-soft">

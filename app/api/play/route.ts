@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { randomInt, randomBytes } from "crypto";
 import { db, hasDb } from "@/lib/db";
-import { grants, plays, rewards } from "@/lib/db/schema";
+import { couponCodes, grants, plays, rewards } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getBoard } from "@/lib/board";
 import { dayKey, genieStart, WALK_MAX_STEPS, WALK_MIN_STEPS } from "@/lib/rules";
@@ -67,6 +67,39 @@ export async function POST() {
     return NextResponse.json({ ok: true, start, steps, landed, prize: null });
   }
 
+  // For an online reward the brand's coupon batch is the real stock. Claim
+  // one with a conditional update so two simultaneous rounds can't be handed
+  // the same code; if the batch is empty the decrement above is given back.
+  let couponCode: string | null = null;
+  let claimedCouponId: string | null = null;
+  if (entry.redemptionType === "online") {
+    const [claimed] = await db
+      .update(couponCodes)
+      .set({ assignedAt: new Date() })
+      .where(
+        and(
+          eq(couponCodes.rewardId, entry.rewardId),
+          sql`${couponCodes.id} = (
+            select id from coupon_codes
+            where reward_id = ${entry.rewardId} and assigned_grant_id is null
+            order by created_at limit 1 for update skip locked
+          )`
+        )
+      )
+      .returning();
+
+    if (!claimed) {
+      await db
+        .update(rewards)
+        .set({ remaining: sql`${rewards.remaining} + 1` })
+        .where(eq(rewards.id, entry.rewardId));
+      await db.insert(plays).values({ userId: user.id, dayKey: key, landedPosition: landed, steps });
+      return NextResponse.json({ ok: true, start, steps, landed, prize: null });
+    }
+    couponCode = claimed.code;
+    claimedCouponId = claimed.id;
+  }
+
   const code = randomBytes(4).toString("hex").toUpperCase();
   const expiresAt = new Date(Date.now() + entry.validDays * 24 * 60 * 60 * 1000);
   const [grant] = await db
@@ -78,9 +111,19 @@ export async function POST() {
       brandName: entry.name,
       label: entry.rewardLabel!,
       icon: entry.rewardIcon,
+      // Snapshotted so a brand editing their listing can't change what
+      // someone already holds.
+      redemptionType: entry.redemptionType,
+      instructions: entry.instructions,
+      redeemUrl: entry.redeemUrl,
+      couponCode,
       expiresAt,
     })
     .returning();
+
+  if (claimedCouponId) {
+    await db.update(couponCodes).set({ assignedGrantId: grant.id }).where(eq(couponCodes.id, claimedCouponId));
+  }
 
   await db.insert(plays).values({
     userId: user.id,
@@ -101,6 +144,8 @@ export async function POST() {
       label: grant.label,
       icon: grant.icon,
       brandName: grant.brandName,
+      redemptionType: grant.redemptionType,
+      couponCode: grant.couponCode,
       expiresAt: grant.expiresAt.toISOString(),
     },
   });

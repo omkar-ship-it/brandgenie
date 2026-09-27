@@ -5,7 +5,7 @@ import { razorpayConfigured } from "@/lib/razorpay";
 import { BID_BASE_PAISE, BID_STEP_PAISE, DEFAULT_REWARD_VALID_DAYS, rupees } from "@/lib/rules";
 import { BrandConsole, type BrandDraft } from "@/components/BrandConsole";
 import { BrandStatsPanel } from "@/components/BrandStats";
-import { getBrandStats } from "@/lib/stats";
+import { getBrandStats, getCouponCounts } from "@/lib/stats";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +18,9 @@ const EMPTY: BrandDraft = {
   instagram: "",
   rewardLabel: "",
   rewardIcon: "🎁",
+  redemptionType: "counter",
+  instructions: "",
+  redeemUrl: "",
   totalStock: 25,
   validDays: DEFAULT_REWARD_VALID_DAYS,
 };
@@ -55,12 +58,16 @@ export default async function BrandPage() {
         instagram: owned.brand.instagram ?? "",
         rewardLabel: owned.reward?.label ?? "",
         rewardIcon: owned.reward?.icon ?? "🎁",
+        redemptionType: owned.reward?.redemptionType ?? "counter",
+        instructions: owned.reward?.instructions ?? "",
+        redeemUrl: owned.reward?.redeemUrl ?? "",
         totalStock: owned.reward?.totalStock ?? 25,
         validDays: owned.reward?.validDays ?? DEFAULT_REWARD_VALID_DAYS,
       }
     : EMPTY;
 
-  const stats = owned ? await getBrandStats(owned.brand.id) : null;
+  const stats = owned ? await getBrandStats(owned.brand.id, owned.reward?.redemptionType ?? "counter") : null;
+  const coupons = owned?.reward ? await getCouponCounts(owned.reward.id) : { total: 0, unused: 0 };
   const currentBid = owned?.brand.bidPaise ?? 0;
   const minPaise = Math.max(BID_BASE_PAISE, currentBid + BID_STEP_PAISE);
   // Enough to clear whoever holds #1 today, rounded up to a whole step.
@@ -94,6 +101,7 @@ export default async function BrandPage() {
         hasBrand={Boolean(owned)}
         logoUrl={owned?.brand.logoUrl ?? null}
         canUploadLogo={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}
+        coupons={coupons}
         currentBidPaise={currentBid}
         position={position}
         suggestedPaise={suggested}
