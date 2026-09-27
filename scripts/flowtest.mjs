@@ -72,6 +72,33 @@ await signIn("giver", `t-give-${stamp}@brandgenie.test`, "customer");
 await signIn("friend", `t-friend-${stamp}@brandgenie.test`, "customer");
 await signIn("brand", `t-brand-${stamp}@brandgenie.test`, "merchant");
 
+// ---------------------------------------------------------------- otp codes
+// Only meaningful where codes reach the log, i.e. local dev.
+if (!PSQL) {
+  console.log("\n-- otp codes");
+  const email = `t-otp-${stamp}@brandgenie.test`;
+  const readCode = () => {
+    const lines = fs.readFileSync(LOG, "utf8").split("\n").filter((l) => l.includes(`login code for ${email} is`));
+    return lines.at(-1).match(/(\d{6})/)[1];
+  };
+  await call("/api/auth/request-otp", { method: "POST", body: { email } });
+  await new Promise((r) => setTimeout(r, 700));
+  const first = readCode();
+  await call("/api/auth/request-otp", { method: "POST", body: { email } });
+  await new Promise((r) => setTimeout(r, 700));
+  const second = readCode();
+  ok("otp: asking twice gives two different codes", first !== second, `${first} then ${second}`);
+
+  const useOld = await call("/api/auth/verify-otp", { method: "POST", body: { email, code: first } });
+  ok("otp: THE BUG — the older code still works", useOld.status === 200, useOld.data.error ?? "accepted");
+
+  const replay = await call("/api/auth/verify-otp", { method: "POST", body: { email, code: second } });
+  ok("otp: signing in retires the other outstanding code", replay.status === 401, replay.data.error);
+
+  const junk = await call("/api/auth/verify-otp", { method: "POST", body: { email, code: "000000" } });
+  ok("otp: a wrong code says wrong, not expired", junk.status === 401 && /isn't right/.test(junk.data.error ?? ""), junk.data.error);
+}
+
 // ---------------------------------------------------------------- play
 console.log("\n-- the round");
 const p1 = await call("/api/play", { method: "POST", as: "winner" });

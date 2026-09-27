@@ -16,18 +16,34 @@ export async function POST(req: Request) {
   const role = body?.role === "merchant" ? "merchant" : "customer";
   if (!email || !code) return NextResponse.json({ error: "Enter the code." }, { status: 400 });
 
-  const [latest] = await db
+  // Every outstanding code is checked, not just the newest.
+  //
+  // Only-the-latest looks tidy but breaks the common case: ask for a code,
+  // the mail is slow, ask again — now the first mail to arrive carries a
+  // code the server refuses, with no way for the person to know which of two
+  // identical-looking emails is the live one. Capped at five so a flood of
+  // requests can't turn one sign-in into unbounded scrypt work.
+  const outstanding = await db
     .select()
     .from(otpCodes)
     .where(and(eq(otpCodes.email, email), isNull(otpCodes.consumedAt)))
     .orderBy(desc(otpCodes.createdAt))
-    .limit(1);
+    .limit(5);
 
-  if (!latest || latest.expiresAt.getTime() < Date.now() || !verifyOtpCode(code, latest.codeHash)) {
-    return NextResponse.json({ error: "That code is wrong or expired." }, { status: 401 });
+  const match = outstanding.find((row) => verifyOtpCode(code, row.codeHash));
+  if (!match) {
+    return NextResponse.json({ error: "That code isn't right. Check the latest email." }, { status: 401 });
+  }
+  if (match.expiresAt.getTime() < Date.now()) {
+    return NextResponse.json({ error: "That code has expired — send yourself a new one." }, { status: 401 });
   }
 
-  await db.update(otpCodes).set({ consumedAt: new Date() }).where(eq(otpCodes.id, latest.id));
+  // Signing in retires every other code outstanding for this address, so an
+  // older mail sitting in an inbox can't be replayed later.
+  await db
+    .update(otpCodes)
+    .set({ consumedAt: new Date() })
+    .where(and(eq(otpCodes.email, email), isNull(otpCodes.consumedAt)));
 
   let [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
   if (!user) {
