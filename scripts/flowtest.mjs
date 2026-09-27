@@ -111,6 +111,41 @@ ok("play: signed-out play is refused", anon.status === 401);
 const asBrand = await call("/api/play", { method: "POST", as: "brand" });
 ok("play: a merchant can't take the round", asBrand.status === 403, asBrand.data.error);
 
+// ---------------------------------------------------------------- board modes
+console.log("\n-- pick & stop experiments");
+await signIn("modes", `t-modes-${stamp}@brandgenie.test`, "customer");
+
+const tooMany = await call("/api/play", {
+  method: "POST", as: "modes",
+  body: { mode: "pick", brandIds: ["a", "b", "c", "d", "e", "f"] },
+});
+ok("pick: refuses more than the limit", tooMany.status === 400, tooMany.data.error);
+const noneChosen = await call("/api/play", { method: "POST", as: "modes", body: { mode: "pick", brandIds: [] } });
+ok("pick: refuses an empty shortlist", noneChosen.status === 400, noneChosen.data.error);
+
+const walk = await call("/api/play/walk", { as: "modes" });
+ok("stop: hands back a signed plan", walk.status === 200 && typeof walk.data.token === "string" && Array.isArray(walk.data.order),
+  `${walk.data.order?.length} tiles, ${walk.data.tickMs}ms each`);
+
+const forgedWalk = await call("/api/play/walk", { method: "POST", as: "modes", body: { token: "nope.nope", elapsedMs: 500 } });
+ok("stop: a forged token is rejected", forgedWalk.status === 400, forgedWalk.data.error);
+
+const tooSoon = await call("/api/play/walk", { method: "POST", as: "modes", body: { token: walk.data.token, elapsedMs: 900_000 } });
+ok("stop: an implausible stop time is rejected", tooSoon.status === 400, tooSoon.data.error);
+
+await new Promise((r) => setTimeout(r, 1200));
+const stopped = await call("/api/play/walk", { method: "POST", as: "modes", body: { token: walk.data.token, elapsedMs: 1100 } });
+ok("stop: a real stop lands somewhere on the board", stopped.status === 200 && stopped.data.landed >= 1, `#${stopped.data.landed}`);
+
+const stopAgain = await call("/api/play/walk", { as: "modes" });
+ok("stop: only one stop round a day", stopAgain.status === 409, stopAgain.data.error);
+
+const classicStillOpen = await call("/api/play", { method: "POST", as: "modes", body: { mode: "classic" } });
+ok("modes: each board keeps its own daily round", classicStillOpen.status === 200, `classic landed #${classicStillOpen.data.landed}`);
+
+const merchantWalk = await call("/api/play/walk", { as: "brand" });
+ok("stop: merchants are kept out of this board too", merchantWalk.status === 403, merchantWalk.data.error);
+
 // ---------------------------------------------------------------- redeem
 console.log("\n-- redemption");
 const winCode = p1.data.prize.code;

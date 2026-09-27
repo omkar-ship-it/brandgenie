@@ -117,6 +117,36 @@ have people burning rewards nowhere near a shop.
 is already burnt with no recourse. Decide that before a real campaign, not
 after the first complaint.
 
+**Three board mechanics are live side by side, being compared.** `/` is the
+classic walk, `/try/pick` and `/try/stop` are the experiments, `/try` compares
+them. `plays.mode` is part of the one-a-day unique key so a tester can play all
+three on the same day — without that, trying one would lock out the others and
+no comparison would be possible. Collapse the index back to
+`(user_id, day_key)` once a winner is chosen.
+
+- **pick** — the player shortlists up to `PICK_LIMIT` brands and the genie
+  draws one of *those*. The draw stays random inside the shortlist on purpose:
+  letting someone name a single brand turns this into "choose your prize",
+  which is a different product with no game in it.
+- **stop** — he walks tile by tile and the player stops him. This is the only
+  mode the browser has to time, so `/api/play/walk` hands out an HMAC-signed
+  plan and the client reports *when* it stopped, never *where*. The server owns
+  the walk order and checks the claimed elapsed time against the wall clock,
+  because otherwise a client could wait, work out which moment lands on the
+  best tile, and send that instead.
+
+**Every variant funnels through `awardLanding` in `lib/round.ts`** — stock,
+coupons and the daily record behave identically however the player reached a
+position. The experiment is about the mechanic, not three subtly different
+award paths.
+
+**Both experiments break the bidding economics, and that's the thing to
+decide.** Under the walk, a position is worth what you bid because every brand
+is reached equally often. Under pick and stop, players converge on whoever is
+giving away the most — the best reward drains first and position stops being
+what a brand is buying. That is the trade-off the test exists to settle, not a
+bug to fix.
+
 **Every reward expires.** Each brand sets `valid_days` per reward; the expiry
 is stamped onto the grant at the moment it's won, not read live from the
 brand's current setting — so a brand editing their listing can't retroactively

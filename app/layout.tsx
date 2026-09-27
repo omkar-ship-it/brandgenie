@@ -16,6 +16,7 @@ export const metadata: Metadata = {
 // sees the customer set plus the way in for brands.
 const CUSTOMER_LINKS = [
   { href: "/", label: "Board" },
+  { href: "/try", label: "Try boards" },
   { href: "/wish", label: "Wishes" },
   { href: "/rewards", label: "My rewards" },
 ];

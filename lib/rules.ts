@@ -2,6 +2,8 @@ export const BOARD_SIZE = 50;
 export const BID_BASE_PAISE = 50_000; // ₹500 — the floor to get on the board
 export const BID_STEP_PAISE = 10_000; // ₹100 — the increment above it
 export const WISHES_PER_DAY = 2;
+/** How many brands a player may shortlist in the "pick" experiment. */
+export const PICK_LIMIT = 5;
 export const DEFAULT_REWARD_VALID_DAYS = 14;
 /** How long the code stays on screen at the counter after being redeemed. */
 export const REDEEM_WINDOW_SECONDS = 30;

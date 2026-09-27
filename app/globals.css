@@ -388,6 +388,65 @@ h3 {
   width: 176px;
 }
 
+/* A shortlisted tile in the pick experiment. */
+.tile.picked {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 8%, var(--card));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent);
+}
+/* Sits on the logo's corner as a deliberate badge — the ring in the card
+   colour is what stops it reading as a stray square half-over the mark. */
+.tile-check {
+  position: absolute;
+  top: 7px;
+  left: 7px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 6px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  box-shadow: 0 0 0 2px var(--card);
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+}
+.tile.picked .tile-check {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+/* Deliberately loud — it has to be hittable in a hurry. */
+.btn-stop {
+  background: linear-gradient(120deg, #e0362c, #9c1810);
+  color: #fff;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  padding: 13px 30px;
+  box-shadow: 0 10px 22px -10px #e0362c;
+  animation: stop-pulse 1.1s ease-in-out infinite;
+}
+.btn-stop:hover {
+  filter: brightness(1.08);
+}
+/* Glow, not scale: a button you have to hit quickly must not move under
+   the cursor. Animating transform shifts the hit box mid-press, which is
+   unfair in a mode decided by timing. */
+@keyframes stop-pulse {
+  50% {
+    box-shadow:
+      0 10px 22px -10px #e0362c,
+      0 0 0 7px rgba(224, 54, 44, 0.16);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn-stop {
+    animation: none;
+  }
+}
+
 /* ------------------------------------------------------- logos */
 
 .logo-slot {

@@ -138,7 +138,13 @@ export const couponCodes = pgTable(
 
 // ---------------------------------------------------------------- play
 
-/** One round per customer per day, enforced by the unique index below. */
+/**
+ * One round per customer per day *per mode*, enforced by the unique index
+ * below. The mode is in the key so the three board experiments can be tried
+ * side by side on the same day — otherwise testing one would lock out the
+ * others and no comparison would be possible. Collapse this back to
+ * (user_id, day_key) once a winner is chosen.
+ */
 export const plays = pgTable(
   "plays",
   {
@@ -147,13 +153,14 @@ export const plays = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     dayKey: text("day_key").notNull(),
+    mode: text("mode").notNull().default("classic"),
     landedPosition: integer("landed_position").notNull(),
     steps: integer("steps").notNull(),
     brandId: uuid("brand_id").references(() => brands.id, { onDelete: "set null" }),
     grantId: uuid("grant_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("plays_user_day_idx").on(t.userId, t.dayKey)]
+  (t) => [uniqueIndex("plays_user_day_mode_idx").on(t.userId, t.dayKey, t.mode)]
 );
 
 /**
