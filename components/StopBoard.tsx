@@ -22,10 +22,18 @@ type State =
  * and stopping on one is the player's own call, which is the whole point of
  * a mode built on timing.
  */
-export function StopBoard({ board, signedIn, playedToday }: {
+export function StopBoard({
+  board,
+  signedIn,
+  playedToday,
+  isMerchant = false,
+  backTo = "/try/stop",
+}: {
   board: BoardEntry[];
   signedIn: boolean;
   playedToday: boolean;
+  isMerchant?: boolean;
+  backTo?: string;
 }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [token, setToken] = useState(board[0]?.position ?? 1);
@@ -91,14 +99,18 @@ export function StopBoard({ board, signedIn, playedToday }: {
   return (
     <>
       <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
-        <span className="text-[34px] leading-none">{walking ? "🧞" : spent ? "🌙" : "⏱️"}</span>
+        <span className="text-[34px] leading-none">
+          {isMerchant ? "🧞" : walking ? "🧞" : spent ? "🌙" : "⏱️"}
+        </span>
         <div className="min-w-[240px] flex-1">
           <div className="text-[15px] font-semibold">
             Stop the genie
             {walking && <span className="mono ml-2 text-[12px] font-normal text-ink-soft">on #{token}</span>}
           </div>
           <p className="text-[13px] text-ink-soft">
-            {spent
+            {isMerchant
+              ? "Customers stop him wherever they like — the higher your position, the sooner he reaches you. The round isn't yours to take."
+              : spent
               ? "That's your round for today."
               : walking
                 ? "Hit stop on the brand you want — he won't wait."
@@ -107,8 +119,8 @@ export function StopBoard({ board, signedIn, playedToday }: {
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}
         </div>
 
-        {!signedIn ? (
-          <Link href="/login?next=/try/stop" className="btn btn-primary">
+        {isMerchant ? null : !signedIn ? (
+          <Link href={`/login?next=${backTo}`} className="btn btn-primary">
             🎁 Play
           </Link>
         ) : walking ? (

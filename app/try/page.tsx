@@ -9,8 +9,9 @@ export default function TryPage() {
       <header className="mb-7">
         <h1 className="text-[26px] font-semibold">Three ways to run the board</h1>
         <p className="mt-1 max-w-[62ch] text-[13.5px] text-ink-soft">
-          Same brands, same rewards, same one-round-a-day. Only the mechanic changes. Each has its own daily
-          round, so you can try all three today and compare them properly.
+          <strong>Stop the genie</strong> is what the board runs on now. The other two are kept here to compare
+          against. Same brands, same rewards, same one-round-a-day — each keeps its own daily round, so trying
+          one doesn&rsquo;t cost you the others.
         </p>
       </header>
 
@@ -31,7 +32,7 @@ export default function TryPage() {
                 <dd className="text-ink-soft">{m.brandFairness}</dd>
               </div>
             </dl>
-            <span className="btn btn-primary mt-4">Try it</span>
+            <span className="btn btn-primary mt-4">{m.slug === "" ? "Go to the board" : "Try it"}</span>
           </Link>
         ))}
       </div>
@@ -39,11 +40,11 @@ export default function TryPage() {
       <div className="card mt-6 p-5">
         <h2 className="text-[15px] font-semibold">What to watch for while testing</h2>
         <p className="mt-1 text-[13px] text-ink-soft">
-          The mechanics differ in how much they let a player steer, and that lands squarely on the brand side of
-          the market. Under the walk, a position is worth what you bid for it because everyone is reached equally.
-          Under the other two, players converge on whoever is giving away the most — so the best reward gets
-          drained first and a position stops being the thing a brand is buying. Worth deciding whether that is a
-          feature or the end of the bidding model.
+          Stop the genie gives players the most control, and that lands squarely on the brand side of the market.
+          Under the old walk a position was worth what you bid for it, because every brand was reached equally
+          often. Now players stop where they like, so the best reward drains first and the thing a bid buys is
+          how <em>soon</em> the genie reaches you rather than whether he does. Position still matters — he starts
+          at #1 and walks down — but it is a different promise to sell, and worth saying plainly to brands.
         </p>
       </div>
     </div>

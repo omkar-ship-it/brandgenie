@@ -4,8 +4,8 @@ import { db, hasDb } from "@/lib/db";
 import { plays } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getBoard } from "@/lib/board";
-import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, dayKey, genieStart, rupees } from "@/lib/rules";
-import { Board } from "@/components/Board";
+import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, dayKey, rupees } from "@/lib/rules";
+import { StopBoard } from "@/components/StopBoard";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ export default async function BoardPage() {
     const [play] = await db
       .select({ id: plays.id })
       .from(plays)
-      .where(and(eq(plays.userId, user.id), eq(plays.dayKey, dayKey())))
+      .where(and(eq(plays.userId, user.id), eq(plays.dayKey, dayKey()), eq(plays.mode, "stop")))
       .limit(1);
     playedToday = Boolean(play);
   }
@@ -40,8 +40,8 @@ export default async function BoardPage() {
         <div>
           <h1 className="text-[26px] font-semibold">The Board</h1>
           <p className="mt-1 max-w-[52ch] text-[13.5px] text-ink-soft">
-            {BOARD_SIZE} places, ranked purely by what each brand bid. The genie walks it once a day and whoever he
-            stops on hands you a reward. One board, every brand, wherever you are.
+            {BOARD_SIZE} places, ranked purely by what each brand bid. Once a day the genie walks it — stop him on
+            the brand you want and their reward is yours.
           </p>
         </div>
         <div className="flex gap-5 text-right">
@@ -69,12 +69,12 @@ export default async function BoardPage() {
           </Link>
         </div>
       ) : (
-        <Board
+        <StopBoard
           board={board}
           signedIn={Boolean(user)}
           isMerchant={isMerchant}
           playedToday={playedToday}
-          startPosition={genieStart(dayKey(), board.length)}
+          backTo="/"
         />
       )}
 
@@ -93,7 +93,7 @@ export default async function BoardPage() {
           </div>
           <p className="text-[12.5px] text-ink-soft">
             From <span className="mono font-semibold">{rupees(entryPaise)}</span>. A bid buys your place in the
-            order, never better odds — the genie walks the same board for everyone.
+            order — and the higher you sit, the sooner the genie reaches you on every walk.
           </p>
         </div>
         <Link href={bidHref} className="btn btn-primary">

@@ -117,9 +117,9 @@ have people burning rewards nowhere near a shop.
 is already burnt with no recourse. Decide that before a real campaign, not
 after the first complaint.
 
-**Three board mechanics are live side by side, being compared.** `/` is the
-classic walk, `/try/pick` and `/try/stop` are the experiments, `/try` compares
-them. `plays.mode` is part of the one-a-day unique key so a tester can play all
+**"Stop the genie" is the board now** (chosen 2026-09-28 after testing). `/`
+runs it; `/try/walk` keeps the original walk and `/try/pick` the shortlist
+experiment, for comparison; `/try/stop` redirects to `/`. `plays.mode` is part of the one-a-day unique key so a tester can play all
 three on the same day — without that, trying one would lock out the others and
 no comparison would be possible. Collapse the index back to
 `(user_id, day_key)` once a winner is chosen.
@@ -140,12 +140,17 @@ coupons and the daily record behave identically however the player reached a
 position. The experiment is about the mechanic, not three subtly different
 award paths.
 
-**Both experiments break the bidding economics, and that's the thing to
-decide.** Under the walk, a position is worth what you bid because every brand
-is reached equally often. Under pick and stop, players converge on whoever is
-giving away the most — the best reward drains first and position stops being
-what a brand is buying. That is the trade-off the test exists to settle, not a
-bug to fix.
+**Choosing stop changed what a bid buys, and the pitch has to change with
+it.** Under the walk a position was worth what you paid because every brand was
+reached equally often. Now players stop where they like, so the best rewards
+drain first and a bid buys how *soon* the genie reaches you — he starts at #1
+and walks down — rather than whether he reaches you at all. Position still
+matters, but it is a different promise, and brands should hear the real one.
+
+Worth watching once there's traffic: whether the tail of the board (#30+) ever
+gets stopped on. If it doesn't, those positions are unsellable and the board
+probably wants to be shorter, or the walk order randomised per player so
+everyone doesn't see #1 first.
 
 **Every reward expires.** Each brand sets `valid_days` per reward; the expiry
 is stamped onto the grant at the moment it's won, not read live from the
