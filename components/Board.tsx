@@ -32,11 +32,13 @@ type PlayState =
 export function Board({
   board,
   signedIn,
+  isMerchant,
   playedToday,
   startPosition,
 }: {
   board: BoardEntry[];
   signedIn: boolean;
+  isMerchant: boolean;
   playedToday: boolean;
   startPosition: number;
 }) {
@@ -128,7 +130,9 @@ export function Board({
     <>
       {/* --------------------------------- the round */}
       <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
-        <span className="text-[34px] leading-none">{busy ? "🧞" : playedToday || state.kind === "done" ? "🌙" : "😴"}</span>
+        <span className="text-[34px] leading-none">
+          {isMerchant ? "🧞" : busy ? "🧞" : playedToday || state.kind === "done" ? "🌙" : "😴"}
+        </span>
 
         {/* A floor width so the button drops to its own line rather than
             squeezing the copy into a column on a phone. */}
@@ -138,7 +142,12 @@ export function Board({
             {busy && <span className="mono ml-2 text-[12px] font-normal text-ink-soft">walking… #{token}</span>}
           </div>
           <p className="text-[13px] text-ink-soft">
-            {state.kind === "done" ? (
+            {isMerchant ? (
+              <>
+                He sets off from <span className="mono font-semibold">#{startPosition}</span> today and stops on
+                one brand per customer. The round is for customers, so there&rsquo;s nothing for you to tap.
+              </>
+            ) : state.kind === "done" ? (
               <>
                 He walked {state.steps} places and stopped at{" "}
                 <span className="mono font-semibold">#{state.landed}</span>.
@@ -155,7 +164,7 @@ export function Board({
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}
         </div>
 
-        {signedIn ? (
+        {isMerchant ? null : signedIn ? (
           <button onClick={startRound} disabled={busy || spent || board.length === 0} className="btn btn-primary">
             {busy ? "He’s off…" : spent ? "Come back tomorrow" : "🧞 Wake the genie"}
           </button>

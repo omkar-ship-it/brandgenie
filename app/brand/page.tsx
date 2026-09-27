@@ -104,6 +104,7 @@ export default async function BrandPage() {
         coupons={coupons}
         currentBidPaise={currentBid}
         position={position}
+        clicks={owned?.brand.clicks ?? 0}
         suggestedPaise={suggested}
         minPaise={minPaise}
       />

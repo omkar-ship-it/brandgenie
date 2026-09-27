@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BID_STEP_PAISE, CATEGORIES, CATEGORY_ICON, rupees } from "@/lib/rules";
+import { TilePreview } from "./TilePreview";
 
 export type BrandDraft = {
   name: string;
@@ -31,6 +32,38 @@ declare global {
   }
 }
 
+const LOGO_MAX_PX = 512;
+
+/**
+ * Real logo files are routinely several megabytes, and the server caps
+ * uploads at 2MB — so rather than rejecting what people actually have,
+ * redraw it to 512px first. Tiles are ~40px, so nothing is lost, and the
+ * board gets lighter images for free.
+ *
+ * SVG passes through untouched: it's already tiny and rasterising it would
+ * throw away the only reason to use it.
+ */
+async function shrinkForUpload(file: File): Promise<File> {
+  if (file.type === "image/svg+xml") return file;
+
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, LOGO_MAX_PX / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return file;
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!blob) return file;
+  return new File([blob], "logo.png", { type: "image/png" });
+}
+
 function loadCheckout() {
   if (window.Razorpay) return Promise.resolve(true);
   return new Promise<boolean>((resolve) => {
@@ -50,6 +83,7 @@ export function BrandConsole({
   coupons: initialCoupons,
   currentBidPaise,
   position,
+  clicks,
   suggestedPaise,
   minPaise,
 }: {
@@ -60,6 +94,7 @@ export function BrandConsole({
   coupons: { total: number; unused: number };
   currentBidPaise: number;
   position: number | null;
+  clicks: number;
   suggestedPaise: number;
   minPaise: number;
 }) {
@@ -73,6 +108,9 @@ export function BrandConsole({
   const [paying, setPaying] = useState(false);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [logoBusy, setLogoBusy] = useState(false);
+  // Upload problems belong beside the logo, not in the save row far below
+  // where nobody looks — that made a rejected file read as "nothing happened".
+  const [logoError, setLogoError] = useState("");
   const [coupons, setCoupons] = useState(initialCoupons);
   const [codeText, setCodeText] = useState("");
   const [codeBusy, setCodeBusy] = useState(false);
@@ -104,18 +142,25 @@ export function BrandConsole({
 
   async function uploadLogo(file: File) {
     setLogoBusy(true);
-    setError("");
-    const body = new FormData();
-    body.append("file", file);
-    const res = await fetch("/api/brand/logo", { method: "POST", body });
-    const data = await res.json().catch(() => ({}));
-    setLogoBusy(false);
-    if (!res.ok) return setError(data.error ?? "Couldn't upload that.");
-    setLogoUrl(data.logoUrl);
+    setLogoError("");
+    try {
+      const prepared = await shrinkForUpload(file);
+      const body = new FormData();
+      body.append("file", prepared);
+      const res = await fetch("/api/brand/logo", { method: "POST", body });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) return setLogoError(data.error ?? "Couldn't upload that.");
+      setLogoUrl(data.logoUrl);
+    } catch {
+      setLogoError("Couldn't read that image. Try a PNG or JPG.");
+    } finally {
+      setLogoBusy(false);
+    }
   }
 
   async function removeLogo() {
     setLogoBusy(true);
+    setLogoError("");
     await fetch("/api/brand/logo", { method: "DELETE" });
     setLogoBusy(false);
     setLogoUrl(null);
@@ -214,7 +259,7 @@ export function BrandConsole({
         {/* Logo first — it's the thing a brand recognises itself by on the
             board, and uploading it before anything else makes the tile
             preview meaningful straight away. */}
-        <div className="mt-5 flex items-center gap-4">
+        <div className="mt-5 flex items-center gap-4 rounded-xl bg-sunk p-4">
           <div className="logo-slot">
             {logoUrl ? (
               /* Plain img: blob URLs are arbitrary hosts and next/image would
@@ -230,29 +275,44 @@ export function BrandConsole({
             {canUploadLogo ? (
               <>
                 <div className="flex flex-wrap gap-2">
-                  <label className="btn btn-ghost cursor-pointer">
-                    {logoBusy ? "Uploading…" : logoUrl ? "Replace" : "Upload a logo"}
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                      className="hidden"
-                      disabled={logoBusy || !saved}
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) void uploadLogo(f);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
+                  {/* A disabled label still looks like a button, so the
+                      not-yet-saved state gets its own dead-looking control
+                      rather than one that silently swallows clicks. */}
+                  {saved ? (
+                    <label className={`btn btn-ghost cursor-pointer ${logoBusy ? "opacity-60" : ""}`}>
+                      {logoBusy ? "Uploading…" : logoUrl ? "Replace" : "Upload a logo"}
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        className="hidden"
+                        disabled={logoBusy}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) void uploadLogo(f);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <button type="button" disabled className="btn btn-ghost">
+                      Upload a logo
+                    </button>
+                  )}
                   {logoUrl && (
                     <button type="button" onClick={removeLogo} disabled={logoBusy} className="btn btn-ghost">
                       Remove
                     </button>
                   )}
                 </div>
-                <p className="mt-1.5 text-[11.5px] text-ink-soft">
-                  {saved ? "PNG, JPG, WebP or SVG, under 2MB. Square works best." : "Save your listing first."}
-                </p>
+                {logoError ? (
+                  <p className="mt-1.5 text-[11.5px] font-semibold text-warn">{logoError}</p>
+                ) : (
+                  <p className="mt-1.5 text-[11.5px] text-ink-soft">
+                    {saved
+                      ? "PNG, JPG, WebP or SVG. Big files are resized for you."
+                      : "Save your listing first, then add a logo."}
+                  </p>
+                )}
               </>
             ) : (
               <p className="text-[11.5px] text-ink-soft">
@@ -262,7 +322,10 @@ export function BrandConsole({
           </div>
         </div>
 
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
+        <h3 className="section-head mt-8">
+          <span>Who you are</span>
+        </h3>
+        <div className="mt-3 grid gap-4 sm:grid-cols-2">
           <Field label="Brand name" className="sm:col-span-2">
             <input
               className="input"
@@ -324,7 +387,9 @@ export function BrandConsole({
           </Field>
         </div>
 
-        <h3 className="mt-7 text-[15px] font-semibold">What you&rsquo;re giving away</h3>
+        <h3 className="section-head mt-8">
+          <span>What you&rsquo;re giving away</span>
+        </h3>
 
         {/* The type decides everything downstream, so it's asked first. */}
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -476,7 +541,22 @@ export function BrandConsole({
         </div>
       </section>
 
-      {/* ------------------------------------------------- bid */}
+      {/* ------------------------------------------------- preview + bid */}
+      <div className="grid gap-5">
+        <section className="card p-6">
+          <TilePreview
+            name={form.name}
+            category={form.category}
+            rewardLabel={form.rewardLabel}
+            rewardIcon={form.rewardIcon}
+            logoUrl={logoUrl}
+            remaining={online ? coupons.unused : form.totalStock}
+            bidPaise={currentBidPaise}
+            position={position}
+            clicks={clicks}
+          />
+        </section>
+
       <section className="card p-6">
         <h2 className="text-[17px] font-semibold">Your place on the board</h2>
 
@@ -513,6 +593,7 @@ export function BrandConsole({
         </p>
         {!saved && <p className="mt-2 text-[12.5px] text-warn">Save your listing before bidding.</p>}
       </section>
+      </div>
     </div>
   );
 }

@@ -72,6 +72,7 @@ export default async function BoardPage() {
         <Board
           board={board}
           signedIn={Boolean(user)}
+          isMerchant={isMerchant}
           playedToday={playedToday}
           startPosition={genieStart(dayKey(), board.length)}
         />

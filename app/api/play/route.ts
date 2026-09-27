@@ -18,6 +18,13 @@ export async function POST() {
   const user = await getSessionUser();
   if (!user) return NextResponse.json({ error: "Sign in to play." }, { status: 401 });
 
+  // The round is for customers. A brand playing the board it's paying to be
+  // on is a conflict whichever way it lands — they could win their own
+  // reward, or be seen to.
+  if (user.role === "merchant") {
+    return NextResponse.json({ error: "The genie's round is for customers." }, { status: 403 });
+  }
+
   const key = dayKey();
   const [existing] = await db
     .select()

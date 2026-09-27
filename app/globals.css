@@ -354,6 +354,40 @@ h3 {
   }
 }
 
+/* A heading with a hairline running off to the right — groups the long
+   listing form without the weight of another card. */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.section-head::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+/* The board's own background behind the preview tile, so what a brand sees
+   here matches where it will actually sit. */
+.preview-stage {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 1px 1px, var(--line) 1px, transparent 0) 0 0 / 14px 14px,
+    var(--bg);
+}
+.preview-stage .tile {
+  width: 176px;
+}
+
 /* ------------------------------------------------------- logos */
 
 .logo-slot {

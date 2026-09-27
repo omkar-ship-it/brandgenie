@@ -108,6 +108,8 @@ const p1again = await call("/api/play", { method: "POST", as: "winner" });
 ok("play: a second round the same day is refused", p1again.status === 409, p1again.data.error);
 const anon = await call("/api/play", { method: "POST" });
 ok("play: signed-out play is refused", anon.status === 401);
+const asBrand = await call("/api/play", { method: "POST", as: "brand" });
+ok("play: a merchant can't take the round", asBrand.status === 403, asBrand.data.error);
 
 // ---------------------------------------------------------------- redeem
 console.log("\n-- redemption");
@@ -115,8 +117,14 @@ const winCode = p1.data.prize.code;
 const r1 = await call("/api/rewards/redeem", { method: "POST", body: { code: winCode }, as: "winner" });
 ok("redeem: owner redeems their reward", r1.status === 200 && r1.data.ok);
 ok("redeem: returns the unique code for the counter", r1.data.code === winCode, r1.data.code);
-ok("redeem: opens a 30s counter window", r1.data.windowSeconds === 30 && !!r1.data.redeemedAt,
-  `${r1.data.windowSeconds}s from ${r1.data.redeemedAt}`);
+// Which reward the genie lands on isn't ours to choose, so assert the rule
+// rather than one outcome: a counter reward gets a live window, an online
+// one never does.
+ok(
+  `redeem: a ${r1.data.redemptionType} reward gets the right window`,
+  r1.data.redemptionType === "counter" ? r1.data.windowSeconds === 30 : r1.data.windowSeconds === 0,
+  `${r1.data.windowSeconds}s`
+);
 const r2 = await call("/api/rewards/redeem", { method: "POST", body: { code: winCode }, as: "winner" });
 ok("redeem: the same code can't be redeemed twice", r2.status === 409, r2.data.error);
 const r3 = await call("/api/rewards/redeem", { method: "POST", body: { code: winCode }, as: "friend" });
