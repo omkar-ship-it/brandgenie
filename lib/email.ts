@@ -17,6 +17,21 @@ async function sendMsg91TemplateEmail(opts: {
   const fromEmail = process.env.MSG91_FROM_EMAIL;
 
   if (!authKey || !domain || !opts.templateId || !fromEmail) {
+    const missing = [
+      !authKey && "MSG91_AUTH_KEY",
+      !domain && "MSG91_EMAIL_DOMAIN",
+      !fromEmail && "MSG91_FROM_EMAIL",
+      !opts.templateId && "template id",
+    ].filter(Boolean);
+
+    // In development this is the point: flows stay testable without
+    // credentials. In production it means nobody can receive a login code,
+    // and answering "ok" would leave them staring at "check your email"
+    // forever — so say so instead of failing silently.
+    if (process.env.NODE_ENV === "production") {
+      console.error(`[${opts.logLabel}] MSG91 NOT CONFIGURED in production — missing ${missing.join(", ")}`);
+      return { ok: false, error: "Email isn't set up right now. Try again shortly." };
+    }
     console.log(`[${opts.logLabel}] MSG91 not configured — ${opts.devFallbackMessage}`);
     return { ok: true };
   }
@@ -33,11 +48,28 @@ async function sendMsg91TemplateEmail(opts: {
       }),
     });
 
+    const body = await res.text().catch(() => "");
     if (!res.ok) {
-      const body = await res.text().catch(() => "");
       console.error(`[${opts.logLabel}] MSG91 send failed`, res.status, body);
       return { ok: false, error: "Couldn't send the email — try again?" };
     }
+
+    // MSG91 returns 200 with hasError:true for some rejections, so the body
+    // has to be read rather than trusting the status code.
+    let parsed: { hasError?: boolean; data?: { unique_id?: string }; message?: string } = {};
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      /* non-JSON success body — nothing to check */
+    }
+    if (parsed.hasError) {
+      console.error(`[${opts.logLabel}] MSG91 rejected the send`, body);
+      return { ok: false, error: "Couldn't send the email — try again?" };
+    }
+
+    // The id is the only handle on a message once it leaves us; without it
+    // "did it send?" is unanswerable after the fact.
+    console.log(`[${opts.logLabel}] queued to ${opts.to} via ${opts.templateId} — id ${parsed.data?.unique_id ?? "?"}`);
     return { ok: true };
   } catch (err) {
     console.error(`[${opts.logLabel}] MSG91 send threw`, err);
