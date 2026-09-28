@@ -44,9 +44,11 @@ export function useBoardMetrics() {
   const [cols, setCols] = useState(10);
   const [gap, setGap] = useState(10);
   const observer = useRef<ResizeObserver | null>(null);
+  const boardRef = useRef<HTMLDivElement | null>(null);
 
   const attachBoard = useCallback((node: HTMLDivElement | null) => {
     observer.current?.disconnect();
+    boardRef.current = node;
     if (!node) return;
     const ro = new ResizeObserver(() => {
       const tile = node.querySelector(".tile") as HTMLElement | null;
@@ -69,7 +71,7 @@ export function useBoardMetrics() {
     height: cellH,
   });
 
-  return { attachBoard, cellW, cellH, cols, gap, ready: cellW > 0, cellStyle };
+  return { attachBoard, boardRef, cellW, cellH, cols, gap, ready: cellW > 0, cellStyle };
 }
 
 /** One brand's square, identical across every board variant. */

@@ -37,7 +37,7 @@ export function StopBoard({
   const [state, setState] = useState<State>({ kind: "idle" });
   const [token, setToken] = useState(board[0]?.position ?? 1);
   const [error, setError] = useState("");
-  const { attachBoard, ready, cellStyle } = useBoardMetrics();
+  const { attachBoard, boardRef, ready, cellStyle } = useBoardMetrics();
   const timer = useRef<number | null>(null);
 
   // A ref so the click handler reads the true start time rather than a
@@ -47,6 +47,35 @@ export function StopBoard({
   useEffect(() => () => {
     if (timer.current) window.clearInterval(timer.current);
   }, []);
+
+  /**
+   * Keep whichever tile he's on inside the viewport.
+   *
+   * The board is fifty tiles tall, so he walks below the fold within a few
+   * seconds — and a timing game where you can't see where he is isn't a
+   * game. `block: "nearest"` only scrolls when he'd otherwise leave, and it
+   * scrolls instantly rather than smoothly on purpose: smooth scrolling
+   * lags behind a 260ms step, so the tile under your thumb would no longer
+   * be the tile he's on.
+   */
+  useEffect(() => {
+    if (state.kind !== "walking") return;
+    const tile = boardRef.current?.querySelectorAll(".tile")[token - 1];
+    tile?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [token, state.kind, boardRef]);
+
+  // Space or Enter stops him too — by the time he's near the bottom of a
+  // long board, reaching for a key beats reaching for a button.
+  useEffect(() => {
+    if (state.kind !== "walking") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== " " && e.key !== "Enter") return;
+      e.preventDefault();
+      void stop(state.plan);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [state]);
 
   async function start() {
     setError("");
@@ -96,6 +125,9 @@ export function StopBoard({
   // replayed as often as someone likes.
   const spent = signedIn && (playedToday || state.kind === "done");
   const walking = state.kind === "walking";
+  // Named on the dock so you can see who you're about to stop on without
+  // hunting for the highlighted tile.
+  const onTile = board.find((e) => e.position === token);
 
   return (
     <>
@@ -121,15 +153,29 @@ export function StopBoard({
         </div>
 
         {isMerchant ? null : walking ? (
-          <button onClick={() => stop(state.plan)} className="btn btn-stop">
-            ✋ STOP
-          </button>
+          <span className="mono text-[12px] text-ink-soft">stop him below ↓</span>
         ) : (
           <button onClick={start} disabled={spent || state.kind === "stopping" || board.length === 0} className="btn btn-primary">
             {state.kind === "stopping" ? "…" : spent ? "Come back tomorrow" : "🧞 Start him walking"}
           </button>
         )}
       </div>
+
+      {/* Fixed to the viewport rather than the page: he walks below the fold
+          within seconds on a fifty-tile board, and a stop button you have to
+          scroll back up to find is no stop button at all. */}
+      {walking && (
+        <div className="stop-dock">
+          <button onClick={() => stop(state.plan)} className="btn btn-stop" autoFocus>
+            ✋ STOP
+          </button>
+          <span className="stop-dock-hint">
+            on <strong>#{token}</strong>
+            {onTile ? ` · ${onTile.name}` : ""}
+            <span className="press-hint"> — or press space</span>
+          </span>
+        </div>
+      )}
 
       {!signedIn && !isMerchant && <PreviewNotice signInHref={`/login?next=${backTo}`} />}
 

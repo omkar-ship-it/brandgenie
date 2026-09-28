@@ -180,7 +180,13 @@ h3 {
   }
 }
 
+/* scrollIntoView parks a tile hard against the viewport edge, where the
+   sticky nav or the fixed stop dock would sit on top of it. These reserve
+   room for both, so the tile he's on is actually visible rather than just
+   technically scrolled to. */
 .tile {
+  scroll-margin-top: 76px;
+  scroll-margin-bottom: 128px;
   position: relative;
   /* Content decides the height — a forced square left a dead band across
      the middle of every tile. Board.tsx measures width and height
@@ -416,6 +422,44 @@ h3 {
 .tile.picked .tile-check {
   border-color: var(--brand);
   background: var(--brand);
+}
+
+/* Travels with the viewport while he walks — see StopBoard. */
+.stop-dock {
+  position: fixed;
+  left: 50%;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 16px 10px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-lift);
+  backdrop-filter: blur(8px);
+}
+.stop-dock .btn-stop {
+  padding: 15px 44px;
+  font-size: 17px;
+}
+/* No keyboard to press on a touch device. */
+@media (hover: none) {
+  .press-hint {
+    display: none;
+  }
+}
+.stop-dock-hint {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  max-width: 62vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Deliberately loud — it has to be hittable in a hurry. */
