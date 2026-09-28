@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, uuid, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, uuid, uniqueIndex, boolean } from "drizzle-orm/pg-core";
 
 // ---------------------------------------------------------------- auth
 // Same hand-rolled email-OTP shape as LetterMail: a user row appears on
@@ -59,6 +59,13 @@ export const brands = pgTable("brands", {
   // so the board never has a hole in it.
   logoUrl: text("logo_url"),
   bidPaise: integer("bid_paise").notNull().default(0),
+  /**
+   * Showcase brands for the comparison boards. They are invisible to the
+   * real board and their rewards are never handed out — without this flag
+   * filling /try with fifty brands would also fill the board customers
+   * actually play, which is the opposite of what a demo should do.
+   */
+  isDemo: boolean("is_demo").notNull().default(false),
   // How many people have opened this brand's card from the board. The
   // engagement number a brand is buying a position for.
   clicks: integer("clicks").notNull().default(0),

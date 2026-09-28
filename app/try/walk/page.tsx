@@ -27,6 +27,7 @@ export default async function WalkPage() {
           signedIn={Boolean(user)}
           isMerchant={user?.role === "merchant"}
           playedToday={playedToday}
+          demo
           startPosition={genieStart(dayKey(), Math.max(1, board.length))}
           showcase
         />

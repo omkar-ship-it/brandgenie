@@ -29,8 +29,12 @@ export type BoardEntry = {
  * The board is just the paid bids in order — highest first, ties to whoever
  * got there first. Positions are derived here and never stored, so a bid
  * landing re-ranks everyone with no gaps.
+ *
+ * `demo` picks which board you get: the real one customers play, or the
+ * showcase the comparison pages run on. The two never mix, so a full /try
+ * board says nothing about who is actually paying for a position.
  */
-export async function getBoard(): Promise<BoardEntry[]> {
+export async function getBoard(demo = false): Promise<BoardEntry[]> {
   if (!hasDb || !db) return [];
 
   const rows = await db
@@ -56,7 +60,7 @@ export async function getBoard(): Promise<BoardEntry[]> {
     })
     .from(brands)
     .leftJoin(rewards, eq(rewards.brandId, brands.id))
-    .where(gt(brands.bidPaise, 0))
+    .where(and(gt(brands.bidPaise, 0), eq(brands.isDemo, demo)))
     .orderBy(desc(brands.bidPaise), asc(brands.bidAt))
     .limit(BOARD_SIZE);
 

@@ -7,7 +7,7 @@ import { alreadyPlayed, awardLanding, previewPrize } from "@/lib/round";
 import { decodeWalk, elapsedIsPlausible, encodeWalk, positionAt, WALK_MAX_MS, WALK_TICK_MS } from "@/lib/walk";
 
 /** Start the walk: hand back a signed plan the browser animates. */
-export async function GET() {
+export async function GET(req: Request) {
   if (!hasDb || !db) return NextResponse.json({ error: "Not available right now." }, { status: 503 });
 
   const user = await getSessionUser();
@@ -15,16 +15,17 @@ export async function GET() {
     return NextResponse.json({ error: "The genie's round is for customers." }, { status: 403 });
   }
 
-  // Signed out, the board is playable but awards nothing — see the note on
-  // preview rounds in ../route.ts.
-  const preview = !user;
+  // The comparison board is a showcase, so a round on it awards nothing
+  // whoever is playing — see the note on preview rounds in ../route.ts.
+  const demo = new URL(req.url).searchParams.get("demo") === "1";
+  const preview = demo || !user;
 
   const key = dayKey();
-  if (user && (await alreadyPlayed(user.id, key, "stop"))) {
+  if (user && !demo && (await alreadyPlayed(user.id, key, "stop"))) {
     return NextResponse.json({ error: "You've already had your round today." }, { status: 409 });
   }
 
-  const board = await getBoard();
+  const board = await getBoard(demo);
   if (board.length === 0) return NextResponse.json({ error: "No brands on the board yet." }, { status: 409 });
 
   // He walks every paid position in board order, sold-out ones included —
@@ -36,6 +37,7 @@ export async function GET() {
     startedAt: Date.now(),
     order: board.map((e) => e.position),
     preview,
+    demo,
   };
 
   return NextResponse.json({
@@ -74,7 +76,8 @@ export async function POST(req: Request) {
   }
 
   const landed = positionAt(plan, elapsedMs);
-  const board = await getBoard();
+  // Resolve against the same board the walk was planned on.
+  const board = await getBoard(plan.demo === true);
   const entry = board[landed - 1];
 
   const result = plan.preview

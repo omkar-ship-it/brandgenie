@@ -58,21 +58,26 @@ export default async function BrandPage() {
         </header>
 
         <div className="mb-6 grid gap-4 sm:grid-cols-3">
-          <Figure label="Places taken" value={`${board.length}/${BOARD_SIZE}`} note={openPlaces > 0 ? `${openPlaces} still open` : "outbid someone to get on"} />
-          <Figure label="Costs from" value={rupees(entryPaise)} note={`rises in ${rupees(BID_STEP_PAISE)} steps`} />
-          <Figure label="Top bid today" value={rupees(topBid)} note="whoever holds #1" />
+          <Figure
+            label="Places taken"
+            value={`${board.length}/${BOARD_SIZE}`}
+            note={openPlaces > 0 ? `${openPlaces} still open` : "outbid someone to get on"}
+            tint="#6d3bef"
+          />
+          <Figure label="Costs from" value={rupees(entryPaise)} note={`rises in ${rupees(BID_STEP_PAISE)} steps`} tint="#0f8b6c" />
+          <Figure label="Top bid today" value={rupees(topBid)} note="whoever holds #1" tint="#b4560f" />
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <Step n={1} title="Describe what you're giving away">
+          <Step n={1} title="Describe what you're giving away" tint="#2354a6">
             A line about the brand, and one reward — a free coffee, a first-order discount, a trial. You set how
             many and how long they stay valid.
           </Step>
-          <Step n={2} title="Pick how it's redeemed">
+          <Step n={2} title="Pick how it's redeemed" tint="#a6237e">
             At your counter, where staff see a live code on a 30-second timer. Or online, where we hand out one
             of your own single-use discount codes per win.
           </Step>
-          <Step n={3} title="Bid for your place">
+          <Step n={3} title="Bid for your place" tint="#1789a6">
             Position is purely what you bid, highest first. The higher you sit, the sooner the genie reaches you
             on every walk.
           </Step>
@@ -166,20 +171,35 @@ export default async function BrandPage() {
   );
 }
 
-function Figure({ label, value, note }: { label: string; value: string; note: string }) {
+function Figure({ label, value, note, tint }: { label: string; value: string; note: string; tint: string }) {
   return (
-    <div className="card p-4">
+    <div className="card liftcard p-4" style={{ ["--tint" as string]: tint }}>
       <div className="text-[10.5px] font-semibold tracking-wide text-ink-soft uppercase">{label}</div>
-      <div className="mono mt-1 text-[22px] leading-none font-semibold">{value}</div>
+      <div className="mono liftcard-key mt-1 text-[22px] leading-none font-semibold">{value}</div>
       <div className="mt-1 text-[11.5px] text-ink-soft">{note}</div>
     </div>
   );
 }
 
-function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+function Step({
+  n,
+  title,
+  tint,
+  children,
+}: {
+  n: number;
+  title: string;
+  tint: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="card p-5">
-      <span className="mono grid h-6 w-6 place-items-center rounded-lg bg-sunk text-[11px] font-semibold">{n}</span>
+    <div className="card liftcard p-5" style={{ ["--tint" as string]: tint }}>
+      <span
+        className="mono grid h-6 w-6 place-items-center rounded-lg text-[11px] font-semibold text-white"
+        style={{ background: tint }}
+      >
+        {n}
+      </span>
       <h2 className="mt-2 text-[14.5px] font-semibold">{title}</h2>
       <p className="mt-1 text-[12.5px] text-ink-soft">{children}</p>
     </div>

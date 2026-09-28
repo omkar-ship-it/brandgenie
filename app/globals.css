@@ -159,6 +159,17 @@ h3 {
   background: color-mix(in srgb, var(--brand) 6%, var(--card));
 }
 
+/* The brand pitch reads as a wall of identical white boxes otherwise.
+   A light wash per card gives the three figures and three steps their own
+   identity without adding weight. */
+.liftcard {
+  border: 1px solid color-mix(in srgb, var(--tint) 45%, var(--line));
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tint) 32%, var(--card)), var(--card) 78%);
+}
+.liftcard .liftcard-key {
+  color: color-mix(in srgb, var(--tint) 70%, var(--ink));
+}
+
 /* ------------------------------------------------------- the board */
 
 /*
@@ -534,13 +545,14 @@ h3 {
   color: var(--ink-soft);
 }
 
-/* The mascot in the nav. */
+/* The mascot in the nav. The portrait is framed and grounded in the image
+   itself, so nothing here crops it — `cover` on a badly framed source was
+   what cut his face in half. */
 .brandmark {
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  object-fit: cover;
-  background: var(--sunk);
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  object-fit: contain;
 }
 
 /* He perches on the tile's top-right corner and overhangs it slightly — a

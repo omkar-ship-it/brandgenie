@@ -12,7 +12,8 @@ import type { RoundMode } from "@/lib/round";
 /** Everything the two experiment pages share but the board component. */
 export async function loadTry(mode: RoundMode) {
   const user = await getSessionUser();
-  const board = await getBoard();
+  // The showcase board, not the live one.
+  const board = await getBoard(true);
 
   let playedToday = false;
   if (user && hasDb && db) {

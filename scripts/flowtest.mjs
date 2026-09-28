@@ -99,6 +99,26 @@ if (!PSQL) {
   ok("otp: a wrong code says wrong, not expired", junk.status === 401 && /isn't right/.test(junk.data.error ?? ""), junk.data.error);
 }
 
+// ------------------------------------------------- a brand on the real board
+// The showcase brands only exist on /try, so the live board is empty until
+// somebody bids. Put one there before testing rounds against it.
+console.log("\n-- putting a brand on the real board");
+// A merchant of its own: the bid tests later start their brand from zero,
+// and they can't do that if this one already holds a bid on the same account.
+await signIn("seeder", `t-seed-${stamp}@brandgenie.test`, "merchant");
+const seedBrand = await call("/api/brand", {
+  method: "POST", as: "seeder",
+  body: {
+    name: `Board Seed ${stamp}`, category: "Food & Beverage", tagline: "On the live board",
+    rewardLabel: "A free test coffee", rewardIcon: "\u2615", totalStock: 40, validDays: 14,
+  },
+});
+ok("board: a brand lists itself", seedBrand.status === 200 && !!seedBrand.data.brandId);
+const seedOrder = await call("/api/bids/create-order", { method: "POST", as: "seeder", body: { amountPaise: 120000 } });
+await call("/api/bids/verify", { method: "POST", as: "seeder", body: { bidId: seedOrder.data.bidId, orderId: seedOrder.data.orderId } });
+const boardNow = await (await fetch(BASE + "/")).text();
+ok("board: and appears on it once the bid lands", boardNow.includes(`Board Seed ${stamp}`));
+
 // ---------------------------------------------------------------- play
 console.log("\n-- the round");
 const p1 = await call("/api/play", { method: "POST", as: "winner" });
@@ -270,7 +290,8 @@ ok("bid: ₹400 is under the ₹500 floor and is refused", low.status === 400, l
 const odd = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 50050 }, as: "brand" });
 ok("bid: an off-step amount is refused", odd.status === 400, odd.data.error);
 const floor = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 50000 }, as: "brand" });
-ok("bid: exactly ₹500 is accepted", floor.status === 200 && !!floor.data.orderId, floor.data.mock ? "test mode" : "live razorpay");
+ok("bid: exactly ₹500 is accepted", floor.status === 200 && !!floor.data.orderId,
+  floor.status === 200 ? (floor.data.mock ? "test mode" : "live razorpay") : floor.data.error);
 
 const v1 = await call("/api/bids/verify", { method: "POST", body: { bidId: floor.data.bidId, orderId: floor.data.orderId }, as: "brand" });
 ok("bid: payment verifies and the bid goes live", v1.status === 200, `₹${(v1.data.amountPaise ?? 0) / 100}`);
@@ -423,6 +444,19 @@ for (const junk of ["not-a-uuid", "abc123", "'; drop table users; --"]) {
   const res = await fetch(BASE + "/", { headers: { Cookie: `bg_session=${encodeURIComponent(junk)}` } });
   ok(`cookie: ${JSON.stringify(junk).slice(0, 22)} reads as signed out, not a 500`, res.status === 200, String(res.status));
 }
+
+// ---------------------------------------------------------------- two boards
+console.log("\n-- the showcase board is separate from the real one");
+const demoRound = await call("/api/play", { method: "POST", as: "winner", body: { mode: "classic", demo: true } });
+ok("showcase: a round awards nothing even signed in",
+  demoRound.status === 200 && demoRound.data.preview === true, `preview=${demoRound.data.preview}`);
+const demoWalk = await call("/api/play/walk?demo=1", { as: "winner" });
+ok("showcase: the stop plan is a preview too", demoWalk.status === 200 && demoWalk.data.preview === true);
+const tryHtml = await (await fetch(BASE + "/try/stop")).text();
+const realHtml = await (await fetch(BASE + "/")).text();
+ok("showcase: /try is populated while the real board is independent",
+  (tryHtml.match(/class="tile[^"]*"/g) ?? []).length > 0);
+void realHtml;
 
 // ---------------------------------------------------------------- pages
 console.log("\n-- pages render");

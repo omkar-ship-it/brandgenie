@@ -40,6 +40,7 @@ export function StopBoard({
   isMerchant = false,
   backTo = "/try/stop",
   allowAnonymous = true,
+  demo = false,
 }: {
   board: BoardEntry[];
   signedIn: boolean;
@@ -48,6 +49,8 @@ export function StopBoard({
   backTo?: string;
   /** The real board asks for an account; the try boards don't. */
   allowAnonymous?: boolean;
+  /** Showcase board: resolves and animates, but awards nothing. */
+  demo?: boolean;
 }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [token, setToken] = useState(board[0]?.position ?? 1);
@@ -95,7 +98,7 @@ export function StopBoard({
 
   async function start() {
     setError("");
-    const res = await fetch("/api/play/walk");
+    const res = await fetch(`/api/play/walk${demo ? "?demo=1" : ""}`);
     const data = await res.json().catch(() => ({}));
     if (!res.ok) return setError(data.error ?? "Couldn't start the round.");
 
@@ -140,7 +143,7 @@ export function StopBoard({
   // On a gated board (the real one) a signed-out visitor can look but not
   // play. Where anonymous play is allowed, a round awards nothing, so it can
   // be replayed as often as someone likes.
-  const spent = signedIn && (playedToday || state.kind === "done");
+  const spent = !demo && signedIn && (playedToday || state.kind === "done");
   const walking = state.kind === "walking";
   // Named on the dock so you can see who you're about to stop on without
   // hunting for the highlighted tile.

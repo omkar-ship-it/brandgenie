@@ -19,6 +19,7 @@ export function Board({
   playedToday,
   startPosition,
   showcase = false,
+  demo = false,
 }: {
   board: BoardEntry[];
   signedIn: boolean;
@@ -27,6 +28,8 @@ export function Board({
   startPosition: number;
   /** Let the bid buy area on the grid rather than just a rank number. */
   showcase?: boolean;
+  /** Showcase board: resolves and animates, but awards nothing. */
+  demo?: boolean;
 }) {
   const [state, setState] = useState<PlayState>({ kind: "idle" });
   const [token, setToken] = useState(startPosition);
@@ -59,7 +62,7 @@ export function Board({
   const anonymous = !signedIn;
 
   // Once the round has run in this tab, the server's `playedToday` is stale.
-  const spent = signedIn && (playedToday || state.kind === "done");
+  const spent = !demo && signedIn && (playedToday || state.kind === "done");
 
   async function startRound() {
     if (busy || spent) return;
@@ -69,7 +72,7 @@ export function Board({
     const res = await fetch("/api/play", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "classic" }),
+      body: JSON.stringify({ mode: "classic", demo }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

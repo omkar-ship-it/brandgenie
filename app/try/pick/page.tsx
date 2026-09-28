@@ -12,7 +12,7 @@ export default async function PickPage() {
       {board.length === 0 ? (
         <EmptyBoardCard bidHref="/login?next=/brand&as=merchant" playful />
       ) : (
-        <PickBoard board={board} signedIn={Boolean(user)} playedToday={playedToday} />
+        <PickBoard board={board} signedIn={Boolean(user)} playedToday={playedToday} demo />
       )}
     </TryShell>
   );

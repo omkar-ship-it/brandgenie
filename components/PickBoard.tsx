@@ -29,10 +29,11 @@ type State =
  * name a single winner: picking one brand would make this "choose your
  * prize", which is a different product with no game in it.
  */
-export function PickBoard({ board, signedIn, playedToday }: {
+export function PickBoard({ board, signedIn, playedToday, demo = false }: {
   board: BoardEntry[];
   signedIn: boolean;
   playedToday: boolean;
+  demo?: boolean;
 }) {
   const [chosen, setChosen] = useState<string[]>([]);
   const [state, setState] = useState<State>({ kind: "choosing" });
@@ -43,7 +44,7 @@ export function PickBoard({ board, signedIn, playedToday }: {
 
   // Signed out, this board is a demo: it can be replayed freely because it
   // awards nothing.
-  const spent = signedIn && (playedToday || state.kind === "done");
+  const spent = !demo && signedIn && (playedToday || state.kind === "done");
   const stocked = (e: BoardEntry) => e.remaining > 0 && e.rewardLabel;
 
   function toggle(entry: BoardEntry) {
@@ -66,7 +67,7 @@ export function PickBoard({ board, signedIn, playedToday }: {
     const res = await fetch("/api/play", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "pick", brandIds: chosen }),
+      body: JSON.stringify({ mode: "pick", brandIds: chosen, demo }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

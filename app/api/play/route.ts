@@ -22,13 +22,16 @@ export async function POST(req: Request) {
   const mode = isMode(body?.mode) && body.mode !== "stop" ? body.mode : "classic";
 
   /**
-   * The comparison boards run without an account so the mechanics can be
-   * shown to anyone. There is nobody to hand a reward to, so a signed-out
-   * round resolves and animates but awards nothing, writes no play, and
-   * leaves brand stock alone — otherwise demoing the board would quietly
-   * drain the rewards real customers are playing for.
+   * Two reasons a round awards nothing.
+   *
+   * Signed out, there is nobody to hand a reward to. And on the comparison
+   * boards the brands are a showcase — handing out their rewards would be
+   * handing out things that don't exist. Either way the round resolves and
+   * animates normally, but writes no play, issues no grant and leaves stock
+   * alone.
    */
-  const preview = !user;
+  const demo = body?.demo === true;
+  const preview = demo || !user;
 
   // The round is for customers. A brand playing the board it's paying to be
   // on is a conflict whichever way it lands — they could win their own
@@ -38,11 +41,11 @@ export async function POST(req: Request) {
   }
 
   const key = dayKey();
-  if (user && (await alreadyPlayed(user.id, key, mode))) {
+  if (user && !demo && (await alreadyPlayed(user.id, key, mode))) {
     return NextResponse.json({ error: "You've already had your round today." }, { status: 409 });
   }
 
-  const board = await getBoard();
+  const board = await getBoard(demo);
   if (board.length === 0) {
     return NextResponse.json({ error: "No brands on the board yet." }, { status: 409 });
   }

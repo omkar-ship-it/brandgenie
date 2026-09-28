@@ -16,6 +16,8 @@ export type WalkPlan = {
    * reward: the token itself says which kind of round it is.
    */
   preview: boolean;
+  /** Which board the walk was planned on, so the stop resolves against it. */
+  demo?: boolean;
 };
 
 /**
