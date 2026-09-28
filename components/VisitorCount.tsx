@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-const DIGITS = 6;
+/**
+ * A floor, not a fixed width: four squares while the count is small, and a
+ * fifth or sixth appears when it earns one. Six squares from day one meant
+ * four leading zeros announcing how few visitors there had been.
+ */
+const MIN_DIGITS = 4;
 
 /** Visitors so far, as an odometer. Sits in the nav beside the links. */
 export function VisitorCount() {
@@ -22,7 +27,9 @@ export function VisitorCount() {
   // Blank until the count arrives, so the number never jumps from a
   // placeholder to the truth in front of someone.
   const digits =
-    total === null ? Array(DIGITS).fill(null) : String(total).padStart(DIGITS, "0").slice(-DIGITS).split("");
+    total === null
+      ? Array(MIN_DIGITS).fill(null)
+      : String(total).padStart(MIN_DIGITS, "0").split("");
 
   return (
     <span className="odo" aria-label={total === null ? "Counting visitors" : `${total} visitors so far`}>
