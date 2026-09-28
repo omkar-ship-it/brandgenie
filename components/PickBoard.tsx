@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE, PICK_LIMIT } from "@/lib/rules";
-import { BoardTile, EmptyTile, PrizeCard, useBoardMetrics, type Prize } from "./boardparts";
+import { BoardTile, EmptyTile, PreviewNotice, PrizeCard, useBoardMetrics, type Prize } from "./boardparts";
 
 type State =
   | { kind: "choosing" }
   | { kind: "walking" }
-  | { kind: "done"; landed: number; prize: Prize | null };
+  | { kind: "done"; landed: number; prize: Prize | null; preview: boolean };
 
 /**
  * Experiment A — the player shortlists the brands they'd actually want, and
@@ -30,7 +29,9 @@ export function PickBoard({ board, signedIn, playedToday }: {
   const [error, setError] = useState("");
   const { attachBoard, ready, cellStyle } = useBoardMetrics();
 
-  const spent = playedToday || state.kind === "done";
+  // Signed out, this board is a demo: it can be replayed freely because it
+  // awards nothing.
+  const spent = signedIn && (playedToday || state.kind === "done");
   const stocked = (e: BoardEntry) => e.remaining > 0 && e.rewardLabel;
 
   function toggle(entry: BoardEntry) {
@@ -72,7 +73,10 @@ export function PickBoard({ board, signedIn, playedToday }: {
       window.setTimeout(() => setToken(at), t);
     }
     window.setTimeout(() => setToken(data.landed), t + 320);
-    window.setTimeout(() => setState({ kind: "done", landed: data.landed, prize: data.prize }), t + 900);
+    window.setTimeout(
+      () => setState({ kind: "done", landed: data.landed, prize: data.prize, preview: Boolean(data.preview) }),
+      t + 900
+    );
   }
 
   const chosenPositions = board.filter((e) => chosen.includes(e.brandId)).map((e) => e.position);
@@ -93,27 +97,30 @@ export function PickBoard({ board, signedIn, playedToday }: {
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}
         </div>
 
-        {signedIn ? (
-          <div className="flex items-center gap-3">
-            <span className="mono text-[13px] text-ink-soft">
-              {chosen.length}/{PICK_LIMIT}
-            </span>
-            <button
-              onClick={send}
-              disabled={chosen.length === 0 || spent || state.kind === "walking"}
-              className="btn btn-primary"
-            >
-              {state.kind === "walking" ? "Choosing…" : spent ? "Come back tomorrow" : "🧞 Send the genie"}
-            </button>
-          </div>
-        ) : (
-          <Link href="/login?next=/try/pick" className="btn btn-primary">
-            🎁 Play
-          </Link>
-        )}
+        <div className="flex items-center gap-3">
+          <span className="mono text-[13px] text-ink-soft">
+            {chosen.length}/{PICK_LIMIT}
+          </span>
+          <button
+            onClick={send}
+            disabled={chosen.length === 0 || spent || state.kind === "walking"}
+            className="btn btn-primary"
+          >
+            {state.kind === "walking" ? "Choosing…" : spent ? "Come back tomorrow" : "🧞 Send the genie"}
+          </button>
+        </div>
       </div>
 
-      {state.kind === "done" && <PrizeCard prize={state.prize} landed={state.landed} />}
+      {!signedIn && <PreviewNotice signInHref="/login?next=/try/pick" />}
+
+      {state.kind === "done" && (
+        <PrizeCard
+          prize={state.prize}
+          landed={state.landed}
+          preview={state.preview}
+          signInHref="/login?next=/try/pick"
+        />
+      )}
 
       <div className="board" ref={attachBoard}>
         {Array.from({ length: BOARD_SIZE }, (_, i) => {

@@ -152,7 +152,17 @@ export function EmptyTile({ position }: { position: number }) {
 }
 
 /** What you won, shown the same way whichever board handed it over. */
-export function PrizeCard({ prize, landed }: { prize: Prize | null; landed: number }) {
+export function PrizeCard({
+  prize,
+  landed,
+  preview = false,
+  signInHref,
+}: {
+  prize: Prize | null;
+  landed: number;
+  preview?: boolean;
+  signInHref?: string;
+}) {
   if (!prize) {
     return (
       <div className="card pop mb-5 p-5">
@@ -166,19 +176,51 @@ export function PrizeCard({ prize, landed }: { prize: Prize | null; landed: numb
     <div className="card pop mb-5 flex flex-wrap items-center gap-4 p-5">
       <span className="text-[30px]">{prize.icon}</span>
       <div className="min-w-[200px] flex-1">
-        <div className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">You won</div>
+        <div className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">
+          {preview ? "You would have won" : "You won"}
+        </div>
         <div className="text-[17px] font-semibold">{prize.label}</div>
         <div className="text-[12.5px] text-ink-soft">
-          {prize.brandName} · use by{" "}
-          {new Date(prize.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+          {prize.brandName}
+          {!preview && (
+            <>
+              {" "}
+              · use by{" "}
+              {new Date(prize.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+            </>
+          )}
         </div>
       </div>
-      <span className="mono rounded-lg bg-sunk px-3 py-2 text-[14px] font-semibold">
-        {prize.couponCode ?? prize.code}
-      </span>
-      <a href="/rewards" className="btn btn-ghost">
-        My rewards
-      </a>
+      {preview ? (
+        <a href={signInHref ?? "/login"} className="btn btn-primary">
+          Sign in to play for real
+        </a>
+      ) : (
+        <>
+          <span className="mono rounded-lg bg-sunk px-3 py-2 text-[14px] font-semibold">
+            {prize.couponCode ?? prize.code}
+          </span>
+          <a href="/rewards" className="btn btn-ghost">
+            My rewards
+          </a>
+        </>
+      )}
     </div>
+  );
+}
+
+/** Said once, above the board, so nobody thinks they're winning things. */
+export function PreviewNotice({ signInHref }: { signInHref: string }) {
+  return (
+    <p className="previewbar mb-5">
+      <span className="text-[17px]">👀</span>
+      <span className="flex-1">
+        You&rsquo;re trying this one out — play as many times as you like, but nothing is awarded and no
+        brand&rsquo;s stock is used.
+      </span>
+      <a href={signInHref} className="font-semibold underline underline-offset-2">
+        Sign in to play for real
+      </a>
+    </p>
   );
 }

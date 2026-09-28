@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import { db, hasDb } from "@/lib/db";
 import { getSessionUser } from "@/lib/session";
-import { getBoard } from "@/lib/board";
+import { getBoard, type BoardEntry } from "@/lib/board";
 import { dayKey, genieStart, PICK_LIMIT, WALK_MAX_STEPS, WALK_MIN_STEPS } from "@/lib/rules";
 import { alreadyPlayed, awardLanding, hasStock, isMode } from "@/lib/round";
 
@@ -18,20 +18,27 @@ export async function POST(req: Request) {
   if (!hasDb || !db) return NextResponse.json({ error: "Not available right now." }, { status: 503 });
 
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "Sign in to play." }, { status: 401 });
-
-  // The round is for customers. A brand playing the board it's paying to be
-  // on is a conflict whichever way it lands — they could win their own
-  // reward, or be seen to.
-  if (user.role === "merchant") {
-    return NextResponse.json({ error: "The genie's round is for customers." }, { status: 403 });
-  }
-
   const body = await req.json().catch(() => null);
   const mode = isMode(body?.mode) && body.mode !== "stop" ? body.mode : "classic";
 
+  /**
+   * The comparison boards run without an account so the mechanics can be
+   * shown to anyone. There is nobody to hand a reward to, so a signed-out
+   * round resolves and animates but awards nothing, writes no play, and
+   * leaves brand stock alone — otherwise demoing the board would quietly
+   * drain the rewards real customers are playing for.
+   */
+  const preview = !user;
+
+  // The round is for customers. A brand playing the board it's paying to be
+  // on is a conflict whichever way it lands — they could win their own
+  // reward, or be seen to. A preview awards nothing, so it's harmless.
+  if (user?.role === "merchant") {
+    return NextResponse.json({ error: "The genie's round is for customers." }, { status: 403 });
+  }
+
   const key = dayKey();
-  if (await alreadyPlayed(user.id, key, mode)) {
+  if (user && (await alreadyPlayed(user.id, key, mode))) {
     return NextResponse.json({ error: "You've already had your round today." }, { status: 409 });
   }
 
@@ -58,17 +65,20 @@ export async function POST(req: Request) {
     }
 
     const chosen = shortlist[randomInt(0, shortlist.length)];
-    const result = await awardLanding({
-      userId: user.id,
-      dayKey: key,
-      mode,
-      steps: shortlist.length,
-      landed: chosen.position,
-      entry: chosen,
-    });
+    const result = preview
+      ? { prize: previewPrize(chosen) }
+      : await awardLanding({
+          userId: user!.id,
+          dayKey: key,
+          mode,
+          steps: shortlist.length,
+          landed: chosen.position,
+          entry: chosen,
+        });
     return NextResponse.json({
       ok: true,
       mode,
+      preview,
       landed: chosen.position,
       shortlist: shortlist.map((e) => e.position),
       ...result,
@@ -87,13 +97,29 @@ export async function POST(req: Request) {
     landed = ((start - 1 + steps) % claimed) + 1;
   }
 
-  const result = await awardLanding({
-    userId: user.id,
-    dayKey: key,
-    mode: "classic",
-    steps,
-    landed,
-    entry: board[landed - 1],
-  });
-  return NextResponse.json({ ok: true, mode: "classic", start, steps, landed, ...result });
+  const result = preview
+    ? { prize: previewPrize(board[landed - 1]) }
+    : await awardLanding({
+        userId: user!.id,
+        dayKey: key,
+        mode: "classic",
+        steps,
+        landed,
+        entry: board[landed - 1],
+      });
+  return NextResponse.json({ ok: true, mode: "classic", preview, start, steps, landed, ...result });
+}
+
+/** What a signed-out player would have won. No code, because none was issued. */
+function previewPrize(entry: BoardEntry | undefined) {
+  if (!entry?.rewardLabel) return null;
+  return {
+    code: "",
+    label: entry.rewardLabel,
+    icon: entry.rewardIcon,
+    brandName: entry.name,
+    redemptionType: entry.redemptionType,
+    couponCode: null,
+    expiresAt: new Date(Date.now() + entry.validDays * 86_400_000).toISOString(),
+  };
 }

@@ -106,8 +106,20 @@ ok("play: round resolves and awards a prize", p1.status === 200 && !!p1.data.pri
 ok("play: landing is inside the board", p1.data.landed >= 1 && p1.data.landed <= 50, `#${p1.data.landed}`);
 const p1again = await call("/api/play", { method: "POST", as: "winner" });
 ok("play: a second round the same day is refused", p1again.status === 409, p1again.data.error);
-const anon = await call("/api/play", { method: "POST" });
-ok("play: signed-out play is refused", anon.status === 401);
+// Signed out is a preview now, not a refusal: the comparison boards have to
+// be demoable to anyone, but there is nobody to award a reward to.
+const anon = await call("/api/play", { method: "POST", body: { mode: "classic" } });
+ok("play: signed-out is a preview, not a refusal", anon.status === 200 && anon.data.preview === true,
+  `preview=${anon.data.preview}`);
+ok("play: a preview issues no code", !anon.data.prize || anon.data.prize.code === "", anon.data.prize?.code ?? "no prize");
+
+const stockBefore = await call("/");
+void stockBefore;
+const anonAgain = await call("/api/play", { method: "POST", body: { mode: "classic" } });
+ok("play: a preview can be replayed — it costs nothing", anonAgain.status === 200, String(anonAgain.status));
+
+const anonStop = await call("/api/play/walk");
+ok("play: the real board still needs an account", anonStop.status === 401, anonStop.data.error);
 const asBrand = await call("/api/play", { method: "POST", as: "brand" });
 ok("play: a merchant can't take the round", asBrand.status === 403, asBrand.data.error);
 

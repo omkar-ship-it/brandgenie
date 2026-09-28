@@ -117,6 +117,13 @@ have people burning rewards nowhere near a shop.
 is already burnt with no recourse. Decide that before a real campaign, not
 after the first complaint.
 
+**The try boards play without an account; the real board doesn't.** Signed
+out, `/try/walk` and `/try/pick` resolve a real round against the live board
+but award nothing — no play row, no grant, no stock decrement — and say so
+plainly. That's deliberate: a demo that handed out rewards would drain the
+stock real customers are playing for, and there is no account to attach a
+grant to anyway. `/` still requires signing in because it issues a real code.
+
 **"Stop the genie" is the board now** (chosen 2026-09-28 after testing). `/`
 runs it; `/try/walk` keeps the original walk and `/try/pick` the shortlist
 experiment, for comparison; `/try/stop` redirects to `/`. `plays.mode` is part of the one-a-day unique key so a tester can play all

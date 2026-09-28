@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import Link from "next/link";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE, CATEGORY_ACCENT, CATEGORY_ICON, rupees } from "@/lib/rules";
+import { PreviewNotice, PrizeCard } from "./boardparts";
 
 /** 1 234 clicks reads as "1.2k" once a tile gets busy. */
 function compact(n: number) {
@@ -27,7 +27,7 @@ type Prize = { code: string; label: string; icon: string; brandName: string; exp
 type PlayState =
   | { kind: "idle" }
   | { kind: "walking"; at: number }
-  | { kind: "done"; landed: number; steps: number; prize: Prize | null };
+  | { kind: "done"; landed: number; steps: number; prize: Prize | null; preview: boolean };
 
 export function Board({
   board,
@@ -72,6 +72,9 @@ export function Board({
   }, []);
 
   const busy = state.kind === "walking";
+  // Signed out, this board is a demo: it awards nothing, so it can be
+  // replayed as often as someone likes.
+  const anonymous = !signedIn;
 
   function openBrand(entry: BoardEntry) {
     setSelected(entry);
@@ -83,14 +86,18 @@ export function Board({
     }).catch(() => {});
   }
   // Once the round has run in this tab, the server's `playedToday` is stale.
-  const spent = playedToday || state.kind === "done";
+  const spent = signedIn && (playedToday || state.kind === "done");
 
   async function startRound() {
-    if (busy || playedToday) return;
+    if (busy || spent) return;
     setError("");
     setState({ kind: "walking", at: startPosition });
 
-    const res = await fetch("/api/play", { method: "POST" });
+    const res = await fetch("/api/play", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "classic" }),
+    });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       setState({ kind: "idle" });
@@ -101,7 +108,7 @@ export function Board({
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced) {
       setToken(data.landed);
-      setState({ kind: "done", landed: data.landed, steps: data.steps, prize: data.prize });
+      setState({ kind: "done", landed: data.landed, steps: data.steps, prize: data.prize, preview: Boolean(data.preview) });
       return;
     }
 
@@ -119,7 +126,7 @@ export function Board({
       }, elapsed);
     }
     window.setTimeout(() => {
-      setState({ kind: "done", landed: data.landed, steps: data.steps, prize: data.prize });
+      setState({ kind: "done", landed: data.landed, steps: data.steps, prize: data.prize, preview: Boolean(data.preview) });
     }, elapsed + 380);
   }
 
@@ -164,42 +171,22 @@ export function Board({
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}
         </div>
 
-        {isMerchant ? null : signedIn ? (
+        {isMerchant ? null : (
           <button onClick={startRound} disabled={busy || spent || board.length === 0} className="btn btn-primary">
             {busy ? "He’s off…" : spent ? "Come back tomorrow" : "🧞 Wake the genie"}
           </button>
-        ) : (
-          <Link href="/login?next=/" className="btn btn-primary">
-            🎁 Play
-          </Link>
         )}
       </div>
 
-      {/* --------------------------------- prize */}
+      {anonymous && <PreviewNotice signInHref="/login?next=/try/walk" />}
+
       {state.kind === "done" && (
-        <div className="card pop mb-5 flex flex-wrap items-center gap-4 p-5">
-          {state.prize ? (
-            <>
-              <span className="text-[30px]">{state.prize.icon}</span>
-              <div className="min-w-0 flex-1">
-                <div className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">You won</div>
-                <div className="text-[17px] font-semibold">{state.prize.label}</div>
-                <div className="text-[12.5px] text-ink-soft">
-                  {state.prize.brandName} · use by{" "}
-                  {new Date(state.prize.expiresAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                </div>
-              </div>
-              <span className="mono rounded-lg bg-sunk px-3 py-2 text-[14px] font-semibold">{state.prize.code}</span>
-              <Link href="/rewards" className="btn btn-ghost">
-                My rewards
-              </Link>
-            </>
-          ) : (
-            <p className="text-[13.5px] text-ink-soft">
-              He reached #{state.landed} but there was nothing left on the shelf. Try again tomorrow.
-            </p>
-          )}
-        </div>
+        <PrizeCard
+          prize={state.prize}
+          landed={state.landed}
+          preview={state.preview}
+          signInHref="/login?next=/try/walk"
+        />
       )}
 
       {/* --------------------------------- board */}
