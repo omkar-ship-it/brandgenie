@@ -3,8 +3,8 @@
 import { useCallback, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE } from "@/lib/rules";
-import { BoardTile, BrandSheet, EmptyTile, PreviewNotice, PrizeCard, useBrandSheet } from "./boardparts";
-import { IconMoon, IconSteps } from "./icons";
+import { BoardTile, BrandSheet, EmptyTile, GenieMark, PreviewNotice, PrizeCard, useBrandSheet } from "./boardparts";
+import { IconMoon, IconPlay } from "./icons";
 
 const GAP = 10;
 
@@ -115,11 +115,11 @@ export function Board({
       <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
         <span className="roundmark">
           {isMerchant || busy ? (
-            <span className="text-[26px] leading-none">🧞</span>
+            <GenieMark />
           ) : spent ? (
             <IconMoon size={22} />
           ) : (
-            <IconSteps size={22} />
+            <GenieMark />
           )}
         </span>
 
@@ -161,7 +161,7 @@ export function Board({
               "Come back tomorrow"
             ) : (
               <>
-                <IconSteps /> Wake the genie
+                <IconPlay /> Wake the genie
               </>
             )}
           </button>
@@ -208,7 +208,8 @@ export function Board({
             }}
             aria-hidden="true"
           >
-            <span>🧞</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/genie.png" alt="" className="genie-img" />
           </span>
         )}
       </div>

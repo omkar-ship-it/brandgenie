@@ -38,12 +38,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <nav className="sticky top-0 z-40 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-card/85 px-5 py-3 backdrop-blur">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            <span
-              className="grid h-7 w-7 place-items-center rounded-lg text-[15px]"
-              style={{ background: "linear-gradient(140deg, var(--brand), var(--brand-deep))" }}
-            >
-              🧞
-            </span>
+            {/* The head rather than the whole character: at 28px a full
+                figure is an unreadable purple smudge, which is the same
+                reason the favicon uses the head too. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/genie-head.png" alt="" className="brandmark" />
             LoyalGenie
           </Link>
           <div className="flex flex-wrap items-center gap-1">

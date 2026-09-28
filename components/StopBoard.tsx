@@ -11,10 +11,11 @@ import {
   PreviewNotice,
   PrizeCard,
   useBoardMetrics,
+  GenieMark,
   useBrandSheet,
   type Prize,
 } from "./boardparts";
-import { IconClock, IconMoon, IconPlay, IconStop, IconSteps } from "./icons";
+import { IconClock, IconMoon, IconPlay, IconStop } from "./icons";
 
 type Plan = { token: string; tickMs: number; maxMs: number; order: number[] };
 type State =
@@ -150,7 +151,7 @@ export function StopBoard({
     <>
       <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
         <span className="roundmark">
-          {isMerchant || walking ? <span className="text-[26px] leading-none">🧞</span>
+          {isMerchant || walking ? <GenieMark />
             : spent ? <IconMoon size={22} /> : <IconClock size={22} />}
         </span>
         <div className="min-w-[240px] flex-1">
@@ -186,7 +187,7 @@ export function StopBoard({
               "Come back tomorrow"
             ) : (
               <>
-                <IconSteps /> Start him walking
+                <IconPlay /> Start him walking
               </>
             )}
           </button>
@@ -241,7 +242,8 @@ export function StopBoard({
 
         {ready && state.kind !== "idle" && (
           <span className="genie" style={cellStyle(token)} aria-hidden="true">
-            <span>🧞</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/genie.png" alt="" className="genie-img" />
           </span>
         )}
       </div>

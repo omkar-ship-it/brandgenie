@@ -355,3 +355,12 @@ export function BrandSheet({ entry, onClose }: { entry: BoardEntry; onClose: () 
     </div>
   );
 }
+
+
+/** The mascot at the size the round card shows him. */
+export function GenieMark() {
+  // A plain img: this is a fixed-size static asset already exported at the
+  // right dimensions, so next/image would add a loader round-trip for it.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/genie.png" alt="" className="h-[30px] w-auto" />;
+}

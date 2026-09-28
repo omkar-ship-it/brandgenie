@@ -10,6 +10,7 @@ import {
   PreviewNotice,
   PrizeCard,
   useBoardMetrics,
+  GenieMark,
   useBrandSheet,
   type Prize,
 } from "./boardparts";
@@ -96,7 +97,7 @@ export function PickBoard({ board, signedIn, playedToday }: {
     <>
       <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
         <span className="roundmark">
-          {state.kind === "walking" ? <span className="text-[26px] leading-none">🧞</span>
+          {state.kind === "walking" ? <GenieMark />
             : spent ? <IconMoon size={22} /> : <IconHandPick size={22} />}
         </span>
         <div className="min-w-[240px] flex-1">
@@ -174,7 +175,8 @@ export function PickBoard({ board, signedIn, playedToday }: {
 
         {ready && state.kind !== "choosing" && (
           <span className="genie" style={cellStyle(token)} aria-hidden="true">
-            <span>🧞</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/genie.png" alt="" className="genie-img" />
           </span>
         )}
       </div>

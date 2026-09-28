@@ -52,16 +52,6 @@ export function IconPlay(p: IconProps) {
   );
 }
 
-/** Setting him walking: footprints. */
-export function IconSteps(p: IconProps) {
-  return (
-    <Svg {...p}>
-      <path d="M5 21c-1.5 0-2-1-2-2.5 0-2 1-3 1-5S3 10 3 8a2.5 2.5 0 0 1 5 0c0 2-1 3.5-1 5.5S8 16.5 8 18.5C8 20 7 21 5 21Z" />
-      <path d="M19 16c-1.5 0-2-1-2-2.5 0-2 1-3 1-5S17 5 17 3a2.5 2.5 0 0 1 5 0c0 2-1 3.5-1 5.5s1 3 1 5c0 1.5-1 2.5-3 2.5Z" />
-    </Svg>
-  );
-}
-
 /** Stop: a filled square is read faster than a hand at speed. */
 export function IconStop(p: IconProps) {
   return (
