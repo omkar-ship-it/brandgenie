@@ -92,7 +92,7 @@ signIn("brand", email, "merchant");
 await call("/api/brand", {
   method: "POST", as: "brand",
   body: {
-    name: `Webhookwallah ${stamp}`, category: "Shopping", tagline: "Pays and closes the tab",
+    name: `Webhookwallah ${stamp}`, category: "E-Commerce", tagline: "Pays and closes the tab",
     rewardLabel: "₹100 off", redemptionType: "counter", totalStock: 10, validDays: 14,
   },
 });

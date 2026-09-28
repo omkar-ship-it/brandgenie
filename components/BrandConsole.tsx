@@ -332,7 +332,7 @@ export function BrandConsole({
               className="input"
               value={form.name}
               onChange={(e) => set("name", e.target.value)}
-              placeholder="Third Wave Coffee"
+              placeholder="Kalaa Studio"
             />
           </Field>
 
@@ -358,7 +358,7 @@ export function BrandConsole({
               className="input"
               value={form.tagline}
               onChange={(e) => set("tagline", e.target.value)}
-              placeholder="Single-origin pour-overs, roasted weekly"
+              placeholder="Handmade ceramics, thrown to order"
             />
           </Field>
 
@@ -437,7 +437,7 @@ export function BrandConsole({
               className="input"
               value={form.rewardLabel}
               onChange={(e) => set("rewardLabel", e.target.value)}
-              placeholder="Free cappuccino"
+              placeholder="A free starter piece"
             />
           </Field>
           {/* The caption goes in the label, not inside the box — this column
@@ -478,7 +478,7 @@ export function BrandConsole({
               placeholder={
                 online
                   ? "Paste at checkout. One per customer, not with other offers."
-                  : "Show this screen at the till before ordering."
+                  : "Show this screen at the counter before paying."
               }
             />
           </Field>

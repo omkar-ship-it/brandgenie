@@ -109,7 +109,7 @@ await signIn("seeder", `t-seed-${stamp}@brandgenie.test`, "merchant");
 const seedBrand = await call("/api/brand", {
   method: "POST", as: "seeder",
   body: {
-    name: `Board Seed ${stamp}`, category: "Food & Beverage", tagline: "On the live board",
+    name: `Board Seed ${stamp}`, category: "Lifestyle", tagline: "On the live board",
     rewardLabel: "A free test coffee", rewardIcon: "\u2615", totalStock: 40, validDays: 14,
   },
 });
@@ -278,7 +278,7 @@ const b1 = await call("/api/brand", {
   method: "POST",
   as: "brand",
   body: {
-    name: `Test Brand ${stamp}`, category: "Food & Beverage", tagline: "Testing, always",
+    name: `Test Brand ${stamp}`, category: "Lifestyle", tagline: "Testing, always",
     area: "Indiranagar", rewardLabel: "A free test coffee", rewardIcon: "☕",
     totalStock: 5, validDays: 7,
   },
@@ -317,7 +317,7 @@ await signIn("shop", `t-shop-${stamp}@brandgenie.test`, "merchant");
 const onlineBrand = await call("/api/brand", {
   method: "POST", as: "shop",
   body: {
-    name: `Online Co ${stamp}`, category: "Shopping", tagline: "Ships everywhere",
+    name: `Online Co ${stamp}`, category: "E-Commerce", tagline: "Ships everywhere",
     rewardLabel: "25% off your first order", rewardIcon: "🛒",
     redemptionType: "online", instructions: "Paste at checkout. One per customer.",
     redeemUrl: "https://onlineco.example/cart", totalStock: 99, validDays: 30,

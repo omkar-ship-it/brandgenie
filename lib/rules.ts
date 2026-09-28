@@ -19,31 +19,55 @@ export const DEFAULT_REWARD_VALID_DAYS = 14;
 /** How long the code stays on screen at the counter after being redeemed. */
 export const REDEEM_WINDOW_SECONDS = 30;
 
+/**
+ * The shelves a brand can sit on.
+ *
+ * These are the categories a *brand* recognises itself in, not a shopper's
+ * browse tree — which is why "Aspirational" sits beside "Electronics" even
+ * though one is a tier and the other a vertical. A brand buying a board
+ * position is buying an audience, and those two buy differently.
+ *
+ * Changing this list is a migration, not an edit: `brands.category` and
+ * `wishes.category` hold these strings, and both the brand console and the
+ * wish form reject anything not in here. `scripts/recategorise.mjs` moves
+ * existing rows across.
+ */
 export const CATEGORIES = [
-  "Food & Beverage",
-  "Beauty & Wellness",
-  "Fitness",
-  "Shopping",
+  "Lifestyle",
+  "D2C · Wellness & Skincare",
   "Entertainment",
+  "Experiences",
   "Travel",
+  "Electronics",
+  "E-Commerce",
+  "Aspirational Brands",
 ] as const;
 
 export const CATEGORY_ICON: Record<string, string> = {
-  "Food & Beverage": "☕",
-  "Beauty & Wellness": "💆",
-  Fitness: "🏋️",
-  Shopping: "🛍️",
+  Lifestyle: "🪴",
+  "D2C · Wellness & Skincare": "✨",
   Entertainment: "🎬",
+  Experiences: "🎟️",
   Travel: "✈️",
+  Electronics: "🎧",
+  "E-Commerce": "📦",
+  "Aspirational Brands": "💎",
 };
 
+/**
+ * One hue per shelf, used for the tile rule and the reward card. Kept at a
+ * similar weight so no category looks louder than another on the board —
+ * position is what a brand pays for, and colour shouldn't quietly outrank it.
+ */
 export const CATEGORY_ACCENT: Record<string, string> = {
-  "Food & Beverage": "#b4560f",
-  "Beauty & Wellness": "#b8306f",
-  Fitness: "#0f8b6c",
-  Shopping: "#2354a6",
+  Lifestyle: "#0f8b6c",
+  "D2C · Wellness & Skincare": "#b8306f",
   Entertainment: "#a6237e",
+  Experiences: "#b4560f",
   Travel: "#1789a6",
+  Electronics: "#4a4fbf",
+  "E-Commerce": "#2354a6",
+  "Aspirational Brands": "#8a6a10",
 };
 
 export const rupees = (paise: number) => `₹${Math.round(paise / 100).toLocaleString("en-IN")}`;

@@ -91,7 +91,7 @@ signIn("brand", bEmail, "merchant");
 let r = await call("/api/brand", {
   method: "POST",
   as: "brand",
-  body: { name: "", category: "Shopping", rewardLabel: "Ten percent off" },
+  body: { name: "", category: "E-Commerce", rewardLabel: "Ten percent off" },
 });
 ok("listing: a nameless brand is refused", r.status === 400, r.data.error);
 
@@ -105,7 +105,7 @@ ok("listing: an invented category is refused", r.status === 400, r.data.error);
 r = await call("/api/brand", {
   method: "POST",
   as: "brand",
-  body: { name: `Testwallah ${stamp}`, category: "Shopping", rewardLabel: "x" },
+  body: { name: `Testwallah ${stamp}`, category: "E-Commerce", rewardLabel: "x" },
 });
 ok("listing: a listing with no real reward is refused", r.status === 400, r.data.error);
 
@@ -114,7 +114,7 @@ r = await call("/api/brand", {
   as: "brand",
   body: {
     name: `Testwallah ${stamp}`,
-    category: "Shopping",
+    category: "E-Commerce",
     tagline: "Things, tested",
     area: "Nationwide",
     website: "https://testwallah.example",
@@ -147,7 +147,7 @@ await call("/api/brand", {
   method: "POST",
   as: "brand",
   body: {
-    name: `Testwallah ${stamp}`, category: "Shopping", rewardLabel: "₹200 off your first order",
+    name: `Testwallah ${stamp}`, category: "E-Commerce", rewardLabel: "₹200 off your first order",
     redemptionType: "counter", totalStock: 40, validDays: 14,
   },
 });

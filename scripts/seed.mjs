@@ -10,10 +10,11 @@
  * ours to borrow, and a screenshot of it travels without whatever caption
  * said "example".
  *
- * So these are invented — but they occupy the slots people actually open
- * every day: quick commerce, food delivery, ride-hailing, pharmacy,
- * streaming, recharges, groceries. A board of artisanal millet snacks and
- * flatweave rugs is charming and completely unlike anybody's phone.
+ * So these are invented — but they populate the eight shelves in
+ * `lib/rules.ts:CATEGORIES`, roughly six or seven a shelf, so a brand
+ * arriving from any of them finds company rather than an empty column. The
+ * spread is deliberate: lifestyle and D2C wellness at the volume end,
+ * aspirational at the top, with experiences and electronics between.
  *
  * Names are checked against real Indian brands as well as against being
  * fictional — an invented name a letter away from a real company is the
@@ -27,56 +28,71 @@
 import { Client } from "pg";
 
 const BRANDS = [
-  ["Turant", "Shopping", "Groceries at your door in ten minutes", "Quick commerce · 22 cities", "Free delivery for a month", "⚡", 9800, "online"],
-  ["Zaika Now", "Food & Beverage", "Food delivery from 40,000 kitchens", "Marketplace · 35 cities", "₹150 off your next four orders", "🍛", 9500, "online"],
-  ["Sawari", "Travel", "Autos and cabs, fixed fares", "Ride-hailing · 28 cities", "₹100 off five rides", "🛺", 9200, "online"],
-  ["Kaapi Kettle", "Food & Beverage", "Filter coffee, 300 counters", "D2C + cafés · pan-India", "A free coffee every week", "☕", 8900, "counter"],
-  ["Dawai Direct", "Beauty & Wellness", "Medicines delivered in two hours", "Pharmacy · 40 cities", "20% off your first order", "💊", 8600, "online"],
-  ["Sur Stream", "Entertainment", "Music without the ad breaks", "Streaming · pan-India", "Three months free", "🎵", 8300, "online"],
-  ["Pehnava", "Shopping", "Fashion from 3,000 labels", "Marketplace · pan-India", "₹500 off your first order", "👗", 8000, "online"],
-  ["Haldi House", "Beauty & Wellness", "Daily skincare, honestly labelled", "D2C · ships nationwide", "Free 3-step starter set", "✨", 7700, "online"],
-  ["Khata Pay", "Shopping", "Bills, recharges and UPI in one app", "Payments · pan-India", "₹200 cashback on recharges", "💳", 7400, "online"],
-  ["Sabzi Direct", "Food & Beverage", "Farm to door, 400 growers listed", "Marketplace · 12 cities", "₹300 off your first basket", "🥬", 7100, "online"],
-  ["Manoranjan+", "Entertainment", "Films and series, one subscription", "Streaming · pan-India", "Two months on us", "📺", 6800, "online"],
-  ["Dabba Daily", "Food & Beverage", "Home-cooked lunch, every working day", "Marketplace · 14 cities", "A free week", "🍱", 6550, "online"],
-  ["Taar Audio", "Shopping", "Earphones built to be repaired", "D2C · ships nationwide", "Flat ₹1500 off", "🎧", 6300, "online"],
-  ["Chalo Rides", "Travel", "Daily commute, monthly pass", "Mobility · 18 cities", "A free week of rides", "🚌", 6050, "online"],
-  ["Saboon Co", "Beauty & Wellness", "Soap and shampoo, refillable", "D2C · ships nationwide", "Free refill pouch", "🧼", 5800, "online"],
-  ["Bazaar Box", "Shopping", "Everything, next-day", "Marketplace · pan-India", "₹400 off anything", "📦", 5600, "online"],
-  ["Chai Patti Co", "Food & Beverage", "The tea you drink twice a day", "D2C · ships nationwide", "A free month's leaf", "🫖", 5400, "online"],
-  ["Sehat Store", "Beauty & Wellness", "Lab tests booked at home", "Healthtech · 30 cities", "A free full-body test", "🩺", 5200, "online"],
-  ["Khel Arcade", "Entertainment", "Games, no in-app purchases", "Subscription · pan-India", "Three months free", "🎮", 5000, "online"],
-  ["Pehelwan Protein", "Fitness", "Whey, tested batch by batch", "D2C · ships nationwide", "A free 1kg tub", "💪", 4800, "online"],
-  ["Raashan Room", "Food & Beverage", "The monthly grocery run, automated", "Subscription · 20 cities", "₹500 off your first month", "🛒", 4600, "online"],
-  ["Charger Club", "Shopping", "Cables that outlive the phone", "D2C · ships nationwide", "A free fast charger", "🔌", 4400, "online"],
-  ["Kapda Circle", "Shopping", "Pre-loved fashion, steamed and sorted", "Marketplace · pan-India", "₹400 off your first buy", "♻️", 4200, "online"],
-  ["Recharge Adda", "Shopping", "Mobile and DTH, one tap", "Payments · pan-India", "₹100 off four recharges", "📱", 4000, "online"],
-  ["Nimbu Press", "Food & Beverage", "Cold-pressed, delivered daily", "D2C · 18 cities", "A free week", "🍋", 3820, "online"],
-  ["Subah Run Club", "Fitness", "Coached 5am runs, any pace", "Subscription · pan-India", "A month free", "🌅", 3650, "online"],
-  ["Safar Luggage", "Travel", "Cabin bags with lifetime wheels", "D2C · ships nationwide", "₹2000 off a cabin bag", "🧳", 3480, "online"],
-  ["Manjan Co", "Beauty & Wellness", "Toothpaste without the plastic tube", "D2C · ships nationwide", "A free three-month pack", "🪥", 3320, "online"],
-  ["Tiffin Network", "Food & Beverage", "Home cooks, one dabba a day", "Marketplace · 14 cities", "A free week", "🥘", 3170, "online"],
-  ["Mistri Now", "Shopping", "Electricians and plumbers, rated", "Services · 24 cities", "First visit free", "🔧", 3020, "online"],
-  ["Kajal Eyewear", "Beauty & Wellness", "Frames fitted from a selfie", "D2C · 25 stores", "Free lenses", "👓", 2880, "online"],
-  ["Filmi Archive", "Entertainment", "Restored classics, streamed", "Streaming · pan-India", "Three months on us", "📽️", 2740, "online"],
-  ["Gaadi Rentals", "Travel", "Self-drive, hourly, no deposit", "Marketplace · 20 cities", "Four hours free", "🚗", 2610, "online"],
-  ["Nidra Bedding", "Shopping", "Bedding that survives a decade", "D2C · ships nationwide", "₹1000 off a set", "🛏️", 2480, "online"],
-  ["Sattu Co", "Fitness", "Protein from roasted gram", "D2C · ships nationwide", "A free month's supply", "🥤", 2360, "online"],
-  ["Purana Bazaar", "Shopping", "Resale, authenticated before it ships", "Marketplace · pan-India", "₹500 off anything", "🔄", 2240, "online"],
-  ["Masala Mail", "Food & Beverage", "Whole spices, ground to order", "D2C · ships nationwide", "A free starter box", "🌶️", 2130, "online"],
-  ["Akhara Supply", "Fitness", "Kettlebells cast in Ludhiana", "D2C · ships nationwide", "Free pair of grips", "🏋️", 2020, "online"],
-  ["Neel Hair", "Beauty & Wellness", "Colour without the ammonia", "D2C · ships nationwide", "A free kit", "💇", 1920, "online"],
-  ["Dukaan Local", "Shopping", "Your neighbourhood shops, online", "Marketplace · 30 cities", "Free delivery for a month", "🏬", 1820, "online"],
-  ["Ticket Adda", "Entertainment", "Films and gigs, no booking fee", "Marketplace · pan-India", "Two tickets free", "🎫", 1730, "online"],
-  ["Achaar Club", "Food & Beverage", "Pickles from surplus fruit", "D2C · ships nationwide", "A free jar trio", "🍯", 1640, "online"],
-  ["Jhola Goods", "Shopping", "Everyday carry, built to last", "D2C · ships nationwide", "20% off anything", "🎒", 1560, "online"],
-  ["Sleeper Class", "Travel", "Train journeys, planned for you", "Marketplace · pan-India", "A free itinerary", "🚂", 1480, "online"],
-  ["Ubtan Lab", "Beauty & Wellness", "Dermatologist-written, not influencer-led", "D2C · ships nationwide", "Free full-size cleanser", "🔬", 1400, "online"],
-  ["Bajra Bakes", "Food & Beverage", "Millet snacks, no palm oil", "D2C · ships nationwide", "A free sampler box", "🥖", 1330, "online"],
-  ["Kirayewala", "Shopping", "Rent the things you'd use twice", "Marketplace · 18 cities", "First rental free", "🔁", 1260, "online"],
-  ["Surya Mats", "Fitness", "Mats that don't slip at minute forty", "D2C · ships nationwide", "20% off any mat", "🪷", 1190, "online"],
-  ["Kolhapuri Made", "Shopping", "Chappals, resoleable forever", "D2C · 20 stores", "Free resoling", "👞", 1120, "counter"],
-  ["Sukoon Spa", "Beauty & Wellness", "Phones stay in the locker", "18 cities", "₹1000 off a massage", "🤫", 1050, "counter"],
+  // ---------------------------------------------- Aspirational Brands (6)
+  ["Maison Ardour", "Aspirational Brands", "Swiss movements, assembled in Bengaluru", "Watchmaker · 9 boutiques", "₹8,000 off your first watch", "⌚", "counter"],
+  ["Vaultgrain", "Aspirational Brands", "Full-grain leather, stitched to order", "Atelier · 6 cities", "A monogrammed card holder, free", "👜", "counter"],
+  ["Noir & Neela", "Aspirational Brands", "Fine jewellery, traceable stones", "Jeweller · 11 boutiques", "₹10,000 off above ₹75,000", "💍", "counter"],
+  ["Cortez Sound", "Aspirational Brands", "Turntables and valve amps", "Hi-fi · 5 listening rooms", "A free cartridge upgrade", "🔊", "counter"],
+  ["Silk Route Cellars", "Aspirational Brands", "Small-batch single malts", "Distillery · 14 cities", "A private tasting for two", "🥃", "counter"],
+  ["Baithak Retreats", "Aspirational Brands", "Twelve rooms, one valley", "Boutique hotel · 3 properties", "A suite upgrade on any stay", "🏔️", "counter"],
+
+  // ---------------------------------------------------------- Lifestyle (7)
+  ["Charpai Co", "Lifestyle", "Furniture that ships flat, lasts long", "D2C · ships nationwide", "₹3,000 off any piece", "🪑", "online"],
+  ["Nidra Bedding", "Lifestyle", "Bedding that survives a decade", "D2C · ships nationwide", "₹1,000 off a set", "🛏️", "online"],
+  ["Angan Living", "Lifestyle", "Plants, pots and the stand to match", "D2C · 16 cities", "A free starter planter", "🪴", "online"],
+  ["Loom & Ledger", "Lifestyle", "Handwoven throws, named weavers", "D2C · ships nationwide", "20% off your first order", "🧶", "online"],
+  ["Kolhapuri Made", "Lifestyle", "Chappals, resoleable forever", "D2C · 20 stores", "Free resoling, for life", "👞", "counter"],
+  ["Dhoop Studio", "Lifestyle", "Candles and incense, no synthetics", "D2C · ships nationwide", "A free travel tin", "🕯️", "online"],
+  ["Safar Luggage", "Lifestyle", "Cabin bags with lifetime wheels", "D2C · ships nationwide", "₹2,000 off a cabin bag", "🧳", "online"],
+
+  // --------------------------------- D2C · Wellness & Skincare (7)
+  ["Haldi House", "D2C · Wellness & Skincare", "Daily skincare, honestly labelled", "D2C · ships nationwide", "Free 3-step starter set", "✨", "online"],
+  ["Ubtan Lab", "D2C · Wellness & Skincare", "Dermatologist-written, not influencer-led", "D2C · ships nationwide", "A free full-size cleanser", "🧴", "online"],
+  ["Neel Hair", "D2C · Wellness & Skincare", "Colour without the ammonia", "D2C · ships nationwide", "A free kit", "💇", "online"],
+  ["Saboon Co", "D2C · Wellness & Skincare", "Soap and shampoo, refillable", "D2C · ships nationwide", "A free refill pouch", "🧼", "online"],
+  ["Manjan Co", "D2C · Wellness & Skincare", "Toothpaste without the plastic tube", "D2C · ships nationwide", "A free three-month pack", "🪥", "online"],
+  ["Sehat Store", "D2C · Wellness & Skincare", "Lab tests booked at home", "Healthtech · 30 cities", "A free full-body test", "🩺", "online"],
+  ["Pehelwan Protein", "D2C · Wellness & Skincare", "Whey, tested batch by batch", "D2C · ships nationwide", "A free 1kg tub", "💪", "online"],
+
+  // ------------------------------------------------------- Electronics (6)
+  ["Taar Audio", "Electronics", "Earphones built to be repaired", "D2C · ships nationwide", "Flat ₹1,500 off", "🎧", "online"],
+  ["Charger Club", "Electronics", "Cables that outlive the phone", "D2C · ships nationwide", "A free fast charger", "🔌", "online"],
+  ["Dobara Devices", "Electronics", "Refurbished phones, 12-month warranty", "Marketplace · pan-India", "₹2,500 off any handset", "📱", "online"],
+  ["Roshni Displays", "Electronics", "Monitors calibrated before they ship", "D2C · ships nationwide", "₹4,000 off a 27-inch", "🖥️", "online"],
+  ["Chaabi Smart", "Electronics", "Door locks that work without wifi", "D2C · 24 cities", "Free installation", "🔐", "counter"],
+  ["Vayu Appliances", "Electronics", "Purifiers with filters you can buy in 2035", "D2C · ships nationwide", "A free spare filter set", "🌬️", "online"],
+
+  // -------------------------------------------------------- E-Commerce (6)
+  ["Bazaar Box", "E-Commerce", "Everything, next-day", "Marketplace · pan-India", "₹400 off anything", "📦", "online"],
+  ["Pehnava", "E-Commerce", "Fashion from 3,000 labels", "Marketplace · pan-India", "₹500 off your first order", "👗", "online"],
+  ["Kapda Circle", "E-Commerce", "Pre-loved fashion, steamed and sorted", "Marketplace · pan-India", "₹400 off your first buy", "♻️", "online"],
+  ["Purana Bazaar", "E-Commerce", "Resale, authenticated before it ships", "Marketplace · pan-India", "₹500 off anything", "🔍", "online"],
+  ["Jhola Goods", "E-Commerce", "Everyday carry, built to last", "D2C · ships nationwide", "20% off anything", "🎒", "online"],
+  ["Kirayewala", "E-Commerce", "Rent the things you'd use twice", "Marketplace · 18 cities", "First rental free", "🔁", "online"],
+
+  // ----------------------------------------------------- Entertainment (6)
+  ["Sur Stream", "Entertainment", "Music without the ad breaks", "Streaming · pan-India", "Three months free", "🎵", "online"],
+  ["Manoranjan+", "Entertainment", "Films and series, one subscription", "Streaming · pan-India", "Two months on us", "📺", "online"],
+  ["Khel Arcade", "Entertainment", "Games, no in-app purchases", "Subscription · pan-India", "Three months free", "🎮", "online"],
+  ["Filmi Archive", "Entertainment", "Restored classics, streamed", "Streaming · pan-India", "Three months on us", "🎞️", "online"],
+  ["Kitaab Club", "Entertainment", "Audiobooks read by the author", "Subscription · pan-India", "A free two-month pass", "🎧", "online"],
+  ["Ticket Adda", "Entertainment", "Films and gigs, no booking fee", "Ticketing · 40 cities", "Two tickets free", "🎫", "online"],
+
+  // ------------------------------------------------------- Experiences (6)
+  ["Akhara Strength", "Experiences", "Coached strength classes, any level", "Studios · 22 cities", "A free two-week pass", "🥊", "counter"],
+  ["Subah Run Club", "Experiences", "Coached 5am runs, any pace", "Clubs · pan-India", "A month free", "🌅", "counter"],
+  ["Sukoon Spa", "Experiences", "Phones stay in the locker", "Spas · 18 cities", "₹1,000 off a massage", "🤫", "counter"],
+  ["Chaupal Sessions", "Experiences", "Live sets in courtyards, 80 seats", "Venues · 12 cities", "A guest ticket, free", "🪕", "counter"],
+  ["Chaak Studio", "Experiences", "Wheel-throwing, two-hour classes", "Studios · 9 cities", "A free taster class", "🏺", "counter"],
+  ["Rasoi School", "Experiences", "Regional cooking, small kitchens", "Studios · 14 cities", "A free knife-skills class", "🔪", "counter"],
+
+  // ------------------------------------------------------------ Travel (6)
+  ["Sawari", "Travel", "Autos and cabs, fixed fares", "Ride-hailing · 28 cities", "₹100 off five rides", "🛺", "online"],
+  ["Rozana Transit", "Travel", "Daily commute, monthly pass", "Mobility · 18 cities", "A free week of rides", "🚌", "online"],
+  ["Gaadi Rentals", "Travel", "Self-drive, hourly, no deposit", "Rentals · 26 cities", "Four hours free", "🚗", "online"],
+  ["Sleeper Class", "Travel", "Train journeys, planned for you", "Travel desk · pan-India", "A free itinerary", "🚆", "online"],
+  ["Pahaadi Stays", "Travel", "Homestays above 6,000 feet", "Marketplace · 90 properties", "A free night on three", "🏕️", "online"],
+  ["Samudra Charters", "Travel", "Day sails off five coastlines", "Charters · 5 ports", "₹3,000 off a charter", "⛵", "counter"],
 ];
 
 const url = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
@@ -135,9 +151,34 @@ const TAIL_RUPEES = 900;
 const ladderRupees = (i, n) =>
   Math.round((TOP_RUPEES * (TAIL_RUPEES / TOP_RUPEES) ** (i / (n - 1))) / 100) * 100;
 
+/**
+ * Deal the shelves out round-robin instead of in blocks.
+ *
+ * The list above is grouped by category because that's the only way to edit
+ * it sanely — but seeding it in that order puts all six aspirational brands
+ * at #1-6 and all seven lifestyle ones at #7-13, so the board looks sorted
+ * by category when the whole premise is that it's sorted by bid. Dealing one
+ * from each shelf in turn mixes the ladder the way real bidding would, and
+ * it's deterministic, so positions don't move on a re-seed.
+ */
+function interleave(rows) {
+  const shelves = new Map();
+  for (const row of rows) {
+    if (!shelves.has(row[1])) shelves.set(row[1], []);
+    shelves.get(row[1]).push(row);
+  }
+  const piles = [...shelves.values()];
+  const out = [];
+  for (let i = 0; out.length < rows.length; i++) {
+    for (const pile of piles) if (pile[i]) out.push(pile[i]);
+  }
+  return out;
+}
+
 let added = 0;
-for (const [i, [name, category, tagline, area, reward, icon, , redemption]] of BRANDS.entries()) {
-  const rupees = ladderRupees(i, BRANDS.length);
+const ORDERED = interleave(BRANDS);
+for (const [i, [name, category, tagline, area, reward, icon, redemption]] of ORDERED.entries()) {
+  const rupees = ladderRupees(i, ORDERED.length);
   const email = `demo+${i + 1}@brandgenie.test`;
   const slug = name.toLowerCase().replace(/[^a-z]+/g, "");
 
@@ -153,7 +194,7 @@ for (const [i, [name, category, tagline, area, reward, icon, , redemption]] of B
   if (existing.length) continue;
 
   // Bids get staggered timestamps so the tie-break ordering is deterministic.
-  const bidAt = new Date(Date.now() - (BRANDS.length - i) * 60_000);
+  const bidAt = new Date(Date.now() - (ORDERED.length - i) * 60_000);
   const { rows: brandRows } = await client.query(
     `insert into brands (user_id, name, tagline, category, area, website, instagram, bid_paise, bid_at, is_demo)
      values ($1,$2,$3,$4,$5,$6,$7,$8,$9,true) returning id`,
@@ -216,8 +257,8 @@ for (const [i, [name, category, tagline, area, reward, icon, , redemption]] of B
  * with it so the ledger doesn't contradict the board.
  */
 let repriced = 0;
-for (const [i, [name]] of BRANDS.entries()) {
-  const paise = ladderRupees(i, BRANDS.length) * 100;
+for (const [i, [name]] of ORDERED.entries()) {
+  const paise = ladderRupees(i, ORDERED.length) * 100;
   const { rowCount } = await client.query(
     `update brands set bid_paise = $2 where is_demo = true and name = $1 and bid_paise <> $2`,
     [name, paise]
@@ -231,7 +272,7 @@ for (const [i, [name]] of BRANDS.entries()) {
   repriced += rowCount;
 }
 if (repriced) {
-  console.log(`re-priced ${repriced} showcase bids — #1 ₹${TOP_RUPEES.toLocaleString("en-IN")}, #${BRANDS.length} ₹${TAIL_RUPEES}`);
+  console.log(`re-priced ${repriced} showcase bids — #1 ₹${TOP_RUPEES.toLocaleString("en-IN")}, #${ORDERED.length} ₹${TAIL_RUPEES}`);
 }
 
 /**
@@ -245,7 +286,7 @@ if (repriced) {
  *
  * Idempotent, so it survives a re-seed that skips existing brands.
  */
-const CLAIMED_OUT = ["Kaapi Kettle", "Sur Stream"];
+const CLAIMED_OUT = ["Sukoon Spa", "Sur Stream"];
 for (const name of CLAIMED_OUT) {
   const { rows } = await client.query(
     `update rewards set remaining = 0
@@ -274,12 +315,12 @@ for (const name of CLAIMED_OUT) {
  * brand that this is a local listings site.
  */
 const WISHES = [
-  ["Free delivery on my grocery orders for a month", "Shopping"],
-  ["₹100 off food delivery on the nights I can't cook", "Food & Beverage"],
+  ["A watch I'd actually hand down", "Aspirational Brands"],
+  ["Skincare that doesn't need a ten-step routine", "D2C · Wellness & Skincare"],
   ["A streaming subscription without the ad breaks", "Entertainment"],
-  ["Cab fares that don't double on the airport run", "Travel"],
-  ["My monthly medicines delivered instead of queued for", "Beauty & Wellness"],
-  ["A protein tub that isn't priced like a luxury", "Fitness"],
+  ["Headphones I can get repaired, not replaced", "Electronics"],
+  ["A pottery class that doesn't need a six-week commitment", "Experiences"],
+  ["Two quiet nights somewhere above the tree line", "Travel"],
 ];
 
 const { rows: wishUser } = await client.query(
