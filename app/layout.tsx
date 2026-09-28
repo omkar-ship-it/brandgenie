@@ -3,6 +3,7 @@ import { Inter, IBM_Plex_Mono } from "next/font/google";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/session";
 import { IconGift, IconStore, IconTag } from "@/components/icons";
+import { VisitorCount } from "@/components/VisitorCount";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 {l.label}
               </Link>
             ))}
+            <VisitorCount />
           </div>
           <div className="ml-auto flex items-center gap-2 text-[12.5px]">
             {user ? (
