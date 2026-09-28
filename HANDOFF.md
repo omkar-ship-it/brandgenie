@@ -383,9 +383,19 @@ re-shoot if needed.
    `sender_name`, `reward`, `claim_link`, then `MSG91_GIFT_TEMPLATE_ID` set.
    Until then gift claim links only appear in the server log — fine for a
    demo, broken for real customers.
-3. **Razorpay keys** whenever live bids are wanted. Test mode is visibly
-   labelled and confirms bids without payment, so the bid flow demos fine
-   without them.
+3. ~~**Razorpay keys**~~ **Live since 2026-09-28.** `RAZORPAY_KEY_ID` /
+   `RAZORPAY_KEY_SECRET` are set on **production only** — deliberately not on
+   preview or locally, so a preview URL or a dev server can't take a real
+   payment. Those environments stay in labelled test mode. Once configured,
+   the `mock_order_` bypass in `verifySignature` stops working, so a test-mode
+   order can't be replayed against a live deployment to claim a free bid.
+
+   **Not yet built, and it matters now that real money moves:** a webhook for
+   `payment.captured`. A bid is currently confirmed by the browser returning
+   from checkout, so if someone pays and closes the tab before the redirect,
+   the money is taken and the bid never goes live. Needs a
+   `RAZORPAY_WEBHOOK_SECRET` and an endpoint that verifies
+   `X-Razorpay-Signature`.
 
 **A decision that needs making before the first brand meeting:** the seed data
 is 20 invented brands with links on the reserved `.example` TLD. That was
