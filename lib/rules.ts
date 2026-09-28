@@ -1,4 +1,15 @@
 export const BOARD_SIZE = 50;
+
+/**
+ * How many squares to actually draw.
+ *
+ * All fifty from day one means a board that is 98% dashed outlines, which
+ * reads as unfinished rather than as room to grow. Show what's taken plus a
+ * handful of open places, and let the board fill out as brands join.
+ */
+export function visibleSlots(claimed: number) {
+  return Math.min(BOARD_SIZE, Math.max(claimed + 9, 10));
+}
 export const BID_BASE_PAISE = 50_000; // ₹500 — the floor to get on the board
 export const BID_STEP_PAISE = 10_000; // ₹100 — the increment above it
 export const WISHES_PER_DAY = 2;

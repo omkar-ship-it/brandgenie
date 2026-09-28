@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { BoardEntry } from "@/lib/board";
-import { BOARD_SIZE, PICK_LIMIT } from "@/lib/rules";
+import { PICK_LIMIT, visibleSlots } from "@/lib/rules";
 import {
   BoardTile,
   BrandSheet,
@@ -146,7 +146,7 @@ export function PickBoard({ board, signedIn, playedToday }: {
       )}
 
       <div className="board" ref={attachBoard}>
-        {Array.from({ length: BOARD_SIZE }, (_, i) => {
+        {Array.from({ length: visibleSlots(board.length) }, (_, i) => {
           const position = i + 1;
           const entry = board[i];
           if (!entry) return <EmptyTile key={position} position={position} />;

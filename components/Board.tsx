@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
-import { BOARD_SIZE } from "@/lib/rules";
+import { visibleSlots } from "@/lib/rules";
 import { BoardTile, BrandSheet, EmptyTile, GenieMark, PreviewNotice, PrizeCard, useBrandSheet } from "./boardparts";
 import { IconMoon, IconPlay } from "./icons";
 
@@ -179,7 +179,7 @@ export function Board({
         className={`board${showcase ? " showcase" : ""}`}
         ref={boardEl}
       >
-        {Array.from({ length: BOARD_SIZE }, (_, i) => {
+        {Array.from({ length: visibleSlots(board.length) }, (_, i) => {
           const position = i + 1;
           const entry = board[i];
           if (!entry) return <EmptyTile key={position} position={position} />;

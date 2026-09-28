@@ -41,6 +41,22 @@ if (!url) {
   process.exit(1);
 }
 
+/**
+ * Demo data must never reach a live board. `vercel env pull`, `vercel link`
+ * and `vercel blob create-store` all rewrite .env.local with production
+ * values, so "it's my local file" is not a safe assumption — check the host
+ * rather than trusting where the command was run from.
+ */
+const remote = !/localhost|127\.0\.0\.1/.test(url);
+if (remote && !process.argv.includes("--i-mean-it")) {
+  console.error(
+    `Refusing to seed demo brands into a remote database.\n` +
+      `  host: ${url.replace(/\/\/[^@]*@/, "//***@").split("/")[2]}\n` +
+      `  If that really is what you want, re-run with --i-mean-it.`
+  );
+  process.exit(1);
+}
+
 const client = new Client({ connectionString: url });
 await client.connect();
 
