@@ -38,11 +38,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <nav className="sticky top-0 z-40 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-card/85 px-5 py-3 backdrop-blur">
           <Link href="/" className="flex items-center gap-2 font-semibold">
-            {/* The head rather than the whole character: at 28px a full
-                figure is an unreadable purple smudge, which is the same
-                reason the favicon uses the head too. */}
+            {/* The whole character, standing beside the wordmark rather than
+                boxed into a square — he is wider than he is tall, so a square
+                mark either crops him or shrinks him to nothing. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/genie-head.png" alt="" className="brandmark" />
+            <img src="/genie.png" alt="" className="brandmark" />
             LoyalGenie
           </Link>
           <div className="flex flex-wrap items-center gap-1">

@@ -545,13 +545,14 @@ h3 {
   color: var(--ink-soft);
 }
 
-/* The mascot in the nav. The portrait is framed and grounded in the image
-   itself, so nothing here crops it — `cover` on a badly framed source was
-   what cut his face in half. */
+/* The mascot in the nav. Sized by height with the width free, because he is
+   a landscape figure — pinning both dimensions is what cropped him before.
+   No background: he stands next to the wordmark rather than sitting in a
+   box, which is the only way the whole character is legible this small. */
 .brandmark {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  height: 38px;
+  width: auto;
+  max-width: none;
   object-fit: contain;
 }
 
