@@ -475,8 +475,8 @@ ok("visits: a different visitor does count", visit3.today === vcount.today + 1, 
 const home = await (await fetch(BASE + "/")).text();
 ok("visits: the counter sits in the nav on every page",
   /odo-digit/.test(home) && /navtry/.test(home));
-const brandPage = await (await fetch(BASE + "/brand")).text();
-ok("visits: and on the other pages too", /odo-digit/.test(brandPage));
+const otherPage = await (await fetch(BASE + "/brand")).text();
+ok("visits: and on the other pages too", /odo-digit/.test(otherPage));
 
 // ---------------------------------------------------------------- pages
 console.log("\n-- pages render");
