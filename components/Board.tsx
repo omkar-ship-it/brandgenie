@@ -1,12 +1,10 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE } from "@/lib/rules";
 import { BoardTile, BrandSheet, EmptyTile, GenieMark, PreviewNotice, PrizeCard, useBrandSheet } from "./boardparts";
 import { IconMoon, IconPlay } from "./icons";
-
-const GAP = 10;
 
 type Prize = { code: string; label: string; icon: string; brandName: string; expiresAt: string };
 type PlayState =
@@ -20,41 +18,40 @@ export function Board({
   isMerchant,
   playedToday,
   startPosition,
+  showcase = false,
 }: {
   board: BoardEntry[];
   signedIn: boolean;
   isMerchant: boolean;
   playedToday: boolean;
   startPosition: number;
+  /** Let the bid buy area on the grid rather than just a rank number. */
+  showcase?: boolean;
 }) {
   const [state, setState] = useState<PlayState>({ kind: "idle" });
   const [token, setToken] = useState(startPosition);
   const [hop, setHop] = useState(false);
   const [error, setError] = useState("");
-  const [cellSize, setCellSize] = useState(0);
-  const [cellH, setCellH] = useState(0);
-  const [cols, setCols] = useState(10);
-  const [gap, setGap] = useState(GAP);
-  const observer = useRef<ResizeObserver | null>(null);
   const { selected, openBrand, closeBrand } = useBrandSheet();
+  const boardEl = useRef<HTMLDivElement | null>(null);
+  const [genieBox, setGenieBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
-  // The board reflows to 5 columns on narrow screens, so both the cell size
-  // and the column count have to be measured rather than assumed.
-  const attachBoard = useCallback((node: HTMLDivElement | null) => {
-    observer.current?.disconnect();
-    if (!node) return;
-    const ro = new ResizeObserver(() => {
-      const tile = node.querySelector(".tile") as HTMLElement | null;
-      if (!tile) return;
-      const style = getComputedStyle(node);
-      setCellSize(tile.offsetWidth);
-      setCellH(tile.offsetHeight);
-      setCols(style.gridTemplateColumns.split(" ").length);
-      setGap(parseFloat(style.gap) || 0);
-    });
-    ro.observe(node);
-    observer.current = ro;
-  }, []);
+  /**
+   * Measure the tile he's on rather than compute it. With the showcase grid
+   * the cells aren't all the same size, so arithmetic from one cell width
+   * lands him on the wrong brand.
+   */
+  useEffect(() => {
+    const place = () => {
+      const tile = boardEl.current?.querySelectorAll<HTMLElement>(".tile")[token - 1];
+      setGenieBox(
+        tile ? { left: tile.offsetLeft, top: tile.offsetTop, width: tile.offsetWidth, height: tile.offsetHeight } : null
+      );
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [token, board.length]);
 
   const busy = state.kind === "walking";
   // Signed out, this board is a demo: it awards nothing, so it can be
@@ -106,8 +103,6 @@ export function Board({
     }, elapsed + 380);
   }
 
-  const row = Math.floor((token - 1) / cols);
-  const col = (token - 1) % cols;
 
   return (
     <>
@@ -180,7 +175,10 @@ export function Board({
       )}
 
       {/* --------------------------------- board */}
-      <div className="board" ref={attachBoard}>
+      <div
+        className={`board${showcase ? " showcase" : ""}`}
+        ref={boardEl}
+      >
         {Array.from({ length: BOARD_SIZE }, (_, i) => {
           const position = i + 1;
           const entry = board[i];
@@ -193,19 +191,15 @@ export function Board({
               hasGenie={token === position}
               outlineColor={state.kind === "done" && state.landed === position ? "var(--good)" : undefined}
               onOpen={busy ? undefined : () => openBrand(entry)}
+              span={showcase ? (position === 1 ? "xl" : position <= 3 ? "wide" : undefined) : undefined}
             />
           );
         })}
 
-        {cellSize > 0 && (
+        {genieBox && (
           <span
             className={`genie ${hop ? "hop" : ""}`}
-            style={{
-              left: col * (cellSize + gap),
-              top: row * (cellH + gap),
-              width: cellSize,
-              height: cellH,
-            }}
+            style={genieBox}
             aria-hidden="true"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}

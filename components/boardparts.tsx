@@ -72,7 +72,21 @@ export function useBoardMetrics() {
     height: cellH,
   });
 
-  return { attachBoard, boardRef, cellW, cellH, cols, gap, ready: cellW > 0, cellStyle };
+  /**
+   * The same thing, measured off the DOM.
+   *
+   * Arithmetic works only while every cell is the same size. A grid where
+   * the top bids take bigger tiles breaks that, so the genie's box is read
+   * from the tile he's actually on. Re-measured whenever the tile or the
+   * layout changes.
+   */
+  function measuredStyle(position: number) {
+    const tile = boardRef.current?.querySelectorAll<HTMLElement>(".tile")[position - 1];
+    if (!tile) return null;
+    return { left: tile.offsetLeft, top: tile.offsetTop, width: tile.offsetWidth, height: tile.offsetHeight };
+  }
+
+  return { attachBoard, boardRef, cellW, cellH, cols, gap, ready: cellW > 0, cellStyle, measuredStyle };
 }
 
 /** One brand's square, identical across every board variant. */
@@ -85,6 +99,7 @@ export function BoardTile({
   selectable,
   selected,
   onInspect,
+  span,
 }: {
   entry: BoardEntry;
   position: number;
@@ -95,6 +110,8 @@ export function BoardTile({
   selected?: boolean;
   /** Where tapping the tile does something else, this opens the card. */
   onInspect?: () => void;
+  /** How much of the showcase grid this brand's bid has earned it. */
+  span?: "xl" | "wide";
 }) {
   const accent = CATEGORY_ACCENT[entry.category] ?? "var(--brand)";
   const h = hue(entry.brandId);
@@ -102,9 +119,9 @@ export function BoardTile({
 
   return (
     <button
-      className={`tile${hasGenie ? " has-genie" : ""}${selected ? " picked" : ""}`}
+      className={`tile${hasGenie ? " has-genie" : ""}${selected ? " picked" : ""}${span ? ` span-${span}` : ""}`}
       onClick={onOpen}
-      style={{ borderColor: outlineColor }}
+      style={{ borderColor: outlineColor, ["--accent" as string]: accent }}
       title={`#${position} · ${entry.name}`}
       aria-pressed={selectable ? Boolean(selected) : undefined}
     >
@@ -146,6 +163,13 @@ export function BoardTile({
         )}
       </span>
       <span className="tile-name">{entry.name}</span>
+      {span && entry.tagline && <span className="tile-tagline">{entry.tagline}</span>}
+      {span === "xl" && (
+        <span className="tile-cat">
+          {CATEGORY_ICON[entry.category]} {entry.category}
+          {entry.area ? ` · ${entry.area}` : ""}
+        </span>
+      )}
       <span className="tile-reward">
         {entry.rewardLabel ? (
           <>
