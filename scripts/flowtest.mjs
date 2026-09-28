@@ -119,7 +119,24 @@ const anonAgain = await call("/api/play", { method: "POST", body: { mode: "class
 ok("play: a preview can be replayed — it costs nothing", anonAgain.status === 200, String(anonAgain.status));
 
 const anonStop = await call("/api/play/walk");
-ok("play: the real board still needs an account", anonStop.status === 401, anonStop.data.error);
+ok("stop: signed out gets a preview plan", anonStop.status === 200 && anonStop.data.preview === true,
+  `preview=${anonStop.data.preview}`);
+
+await new Promise((r) => setTimeout(r, 1100));
+const anonStopped = await call("/api/play/walk", { method: "POST", body: { token: anonStop.data.token, elapsedMs: 1050 } });
+ok("stop: a signed-out stop awards nothing", anonStopped.status === 200 && anonStopped.data.preview === true
+  && (!anonStopped.data.prize || anonStopped.data.prize.code === ""), anonStopped.data.prize?.label ?? "no prize");
+
+// the property that matters: a preview token must not become a real reward
+const previewPlan = await call("/api/play/walk");
+await new Promise((r) => setTimeout(r, 1100));
+const upgraded = await call("/api/play/walk", {
+  method: "POST", as: "winner",
+  body: { token: previewPlan.data.token, elapsedMs: 1050 },
+});
+ok("stop: a preview token can't be cashed in by a signed-in session",
+  upgraded.status === 200 && upgraded.data.preview === true && (!upgraded.data.prize || upgraded.data.prize.code === ""),
+  `preview=${upgraded.data.preview} code=${upgraded.data.prize?.code ?? "none"}`);
 const asBrand = await call("/api/play", { method: "POST", as: "brand" });
 ok("play: a merchant can't take the round", asBrand.status === 403, asBrand.data.error);
 

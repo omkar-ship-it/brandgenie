@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE } from "@/lib/rules";
-import { BoardTile, EmptyTile, PrizeCard, useBoardMetrics, type Prize } from "./boardparts";
+import { BoardTile, EmptyTile, PreviewNotice, PrizeCard, useBoardMetrics, type Prize } from "./boardparts";
 
 type Plan = { token: string; tickMs: number; maxMs: number; order: number[] };
 type State =
   | { kind: "idle" }
   | { kind: "walking"; plan: Plan; startedAt: number }
   | { kind: "stopping" }
-  | { kind: "done"; landed: number; prize: Prize | null };
+  | { kind: "done"; landed: number; prize: Prize | null; preview: boolean };
 
 /**
  * Experiment B — he walks the board tile by tile and the player stops him.
@@ -90,10 +89,12 @@ export function StopBoard({
       return setError(data.error ?? "Couldn't stop him.");
     }
     setToken(data.landed);
-    setState({ kind: "done", landed: data.landed, prize: data.prize });
+    setState({ kind: "done", landed: data.landed, prize: data.prize, preview: Boolean(data.preview) });
   }
 
-  const spent = playedToday || state.kind === "done";
+  // Signed out the board is a demo: it awards nothing, so it can be
+  // replayed as often as someone likes.
+  const spent = signedIn && (playedToday || state.kind === "done");
   const walking = state.kind === "walking";
 
   return (
@@ -119,11 +120,7 @@ export function StopBoard({
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}
         </div>
 
-        {isMerchant ? null : !signedIn ? (
-          <Link href={`/login?next=${backTo}`} className="btn btn-primary">
-            🎁 Play
-          </Link>
-        ) : walking ? (
+        {isMerchant ? null : walking ? (
           <button onClick={() => stop(state.plan)} className="btn btn-stop">
             ✋ STOP
           </button>
@@ -134,7 +131,16 @@ export function StopBoard({
         )}
       </div>
 
-      {state.kind === "done" && <PrizeCard prize={state.prize} landed={state.landed} />}
+      {!signedIn && !isMerchant && <PreviewNotice signInHref={`/login?next=${backTo}`} />}
+
+      {state.kind === "done" && (
+        <PrizeCard
+          prize={state.prize}
+          landed={state.landed}
+          preview={state.preview}
+          signInHref={`/login?next=${backTo}`}
+        />
+      )}
 
       <div className="board" ref={attachBoard}>
         {Array.from({ length: BOARD_SIZE }, (_, i) => {

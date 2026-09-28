@@ -5,10 +5,17 @@ export const WALK_TICK_MS = 260;
 export const WALK_MAX_MS = 25_000;
 
 export type WalkPlan = {
+  /** Empty on a preview — there is no account behind it. */
   userId: string;
   dayKey: string;
   startedAt: number;
   order: number[];
+  /**
+   * Signed into the plan rather than inferred at stop time, so a signed-out
+   * round can never be replayed by a signed-in session to claim a real
+   * reward: the token itself says which kind of round it is.
+   */
+  preview: boolean;
 };
 
 /**
@@ -45,7 +52,8 @@ export function decodeWalk(token: unknown): WalkPlan | null {
 
   try {
     const plan = JSON.parse(Buffer.from(payload, "base64url").toString()) as WalkPlan;
-    if (!plan?.userId || !Array.isArray(plan.order) || plan.order.length === 0) return null;
+    if (!Array.isArray(plan?.order) || plan.order.length === 0) return null;
+    if (!plan.preview && !plan.userId) return null;
     return plan;
   } catch {
     return null;

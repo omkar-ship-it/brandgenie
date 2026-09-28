@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { randomInt } from "crypto";
 import { db, hasDb } from "@/lib/db";
 import { getSessionUser } from "@/lib/session";
-import { getBoard, type BoardEntry } from "@/lib/board";
+import { getBoard } from "@/lib/board";
 import { dayKey, genieStart, PICK_LIMIT, WALK_MAX_STEPS, WALK_MIN_STEPS } from "@/lib/rules";
-import { alreadyPlayed, awardLanding, hasStock, isMode } from "@/lib/round";
+import { alreadyPlayed, awardLanding, hasStock, isMode, previewPrize } from "@/lib/round";
 
 /**
  * Resolves a round for the two modes that settle in one request: the classic
@@ -108,18 +108,4 @@ export async function POST(req: Request) {
         entry: board[landed - 1],
       });
   return NextResponse.json({ ok: true, mode: "classic", preview, start, steps, landed, ...result });
-}
-
-/** What a signed-out player would have won. No code, because none was issued. */
-function previewPrize(entry: BoardEntry | undefined) {
-  if (!entry?.rewardLabel) return null;
-  return {
-    code: "",
-    label: entry.rewardLabel,
-    icon: entry.rewardIcon,
-    brandName: entry.name,
-    redemptionType: entry.redemptionType,
-    couponCode: null,
-    expiresAt: new Date(Date.now() + entry.validDays * 86_400_000).toISOString(),
-  };
 }

@@ -150,3 +150,20 @@ export async function awardLanding(opts: {
     },
   };
 }
+
+/**
+ * What a signed-out player would have won. No code, because none was
+ * issued — the preview never touches stock or grants.
+ */
+export function previewPrize(entry: BoardEntry | undefined) {
+  if (!entry?.rewardLabel) return null;
+  return {
+    code: "",
+    label: entry.rewardLabel,
+    icon: entry.rewardIcon,
+    brandName: entry.name,
+    redemptionType: entry.redemptionType,
+    couponCode: null,
+    expiresAt: new Date(Date.now() + entry.validDays * 86_400_000).toISOString(),
+  };
+}

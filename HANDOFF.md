@@ -117,12 +117,17 @@ have people burning rewards nowhere near a shop.
 is already burnt with no recourse. Decide that before a real campaign, not
 after the first complaint.
 
-**The try boards play without an account; the real board doesn't.** Signed
-out, `/try/walk` and `/try/pick` resolve a real round against the live board
-but award nothing — no play row, no grant, no stock decrement — and say so
-plainly. That's deliberate: a demo that handed out rewards would drain the
-stock real customers are playing for, and there is no account to attach a
-grant to anyway. `/` still requires signing in because it issues a real code.
+**Every board plays without an account, and a signed-out round awards
+nothing** — no play row, no grant, no stock decrement — and says so plainly.
+That's deliberate: a demo that handed out rewards would drain the stock real
+customers are playing for, and there's no account to attach a grant to anyway.
+Signing in gets the real thing: one round a day, a real code, stock that moves.
+
+For "stop", the preview flag is **signed into the walk token**, not inferred
+from the session at stop time. Otherwise a round started signed-out could be
+stopped by a signed-in session and cashed in for a real reward. The token
+declares which kind of round it is and can't be edited without breaking the
+HMAC; there's a test for exactly that.
 
 **"Stop the genie" is the board now** (chosen 2026-09-28 after testing). `/`
 runs it; `/try/walk` keeps the original walk and `/try/pick` the shortlist

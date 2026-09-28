@@ -3,7 +3,7 @@ import { db, hasDb } from "@/lib/db";
 import { getSessionUser } from "@/lib/session";
 import { getBoard } from "@/lib/board";
 import { dayKey } from "@/lib/rules";
-import { alreadyPlayed, awardLanding } from "@/lib/round";
+import { alreadyPlayed, awardLanding, previewPrize } from "@/lib/round";
 import { decodeWalk, elapsedIsPlausible, encodeWalk, positionAt, WALK_MAX_MS, WALK_TICK_MS } from "@/lib/walk";
 
 /** Start the walk: hand back a signed plan the browser animates. */
@@ -11,13 +11,16 @@ export async function GET() {
   if (!hasDb || !db) return NextResponse.json({ error: "Not available right now." }, { status: 503 });
 
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "Sign in to play." }, { status: 401 });
-  if (user.role === "merchant") {
+  if (user?.role === "merchant") {
     return NextResponse.json({ error: "The genie's round is for customers." }, { status: 403 });
   }
 
+  // Signed out, the board is playable but awards nothing — see the note on
+  // preview rounds in ../route.ts.
+  const preview = !user;
+
   const key = dayKey();
-  if (await alreadyPlayed(user.id, key, "stop")) {
+  if (user && (await alreadyPlayed(user.id, key, "stop"))) {
     return NextResponse.json({ error: "You've already had your round today." }, { status: 409 });
   }
 
@@ -28,14 +31,16 @@ export async function GET() {
   // they're visibly marked, and stopping on one is the player's own call.
   // That's the point of the mode: the choice, and its consequence, are theirs.
   const plan = {
-    userId: user.id,
+    userId: user?.id ?? "",
     dayKey: key,
     startedAt: Date.now(),
     order: board.map((e) => e.position),
+    preview,
   };
 
   return NextResponse.json({
     ok: true,
+    preview,
     token: encodeWalk(plan),
     tickMs: WALK_TICK_MS,
     maxMs: WALK_MAX_MS,
@@ -48,12 +53,14 @@ export async function POST(req: Request) {
   if (!hasDb || !db) return NextResponse.json({ error: "Not available right now." }, { status: 503 });
 
   const user = await getSessionUser();
-  if (!user) return NextResponse.json({ error: "Sign in to play." }, { status: 401 });
 
   const body = await req.json().catch(() => null);
   const plan = decodeWalk(body?.token);
   if (!plan) return NextResponse.json({ error: "That round isn't valid." }, { status: 400 });
-  if (plan.userId !== user.id) return NextResponse.json({ error: "That round isn't yours." }, { status: 403 });
+  // A real round belongs to exactly one account; a preview belongs to nobody.
+  if (!plan.preview && plan.userId !== user?.id) {
+    return NextResponse.json({ error: "That round isn't yours." }, { status: 403 });
+  }
 
   const elapsedMs = Number(body?.elapsedMs);
   if (!elapsedIsPlausible(plan, elapsedMs)) {
@@ -62,7 +69,7 @@ export async function POST(req: Request) {
 
   const key = dayKey();
   if (plan.dayKey !== key) return NextResponse.json({ error: "That round has expired." }, { status: 409 });
-  if (await alreadyPlayed(user.id, key, "stop")) {
+  if (!plan.preview && (await alreadyPlayed(plan.userId, key, "stop"))) {
     return NextResponse.json({ error: "You've already had your round today." }, { status: 409 });
   }
 
@@ -70,14 +77,16 @@ export async function POST(req: Request) {
   const board = await getBoard();
   const entry = board[landed - 1];
 
-  const result = await awardLanding({
-    userId: user.id,
-    dayKey: key,
-    mode: "stop",
-    steps: Math.floor(elapsedMs / WALK_TICK_MS),
-    landed,
-    entry,
-  });
+  const result = plan.preview
+    ? { prize: previewPrize(entry) }
+    : await awardLanding({
+        userId: plan.userId,
+        dayKey: key,
+        mode: "stop",
+        steps: Math.floor(elapsedMs / WALK_TICK_MS),
+        landed,
+        entry,
+      });
 
-  return NextResponse.json({ ok: true, mode: "stop", landed, elapsedMs, ...result });
+  return NextResponse.json({ ok: true, mode: "stop", preview: plan.preview, landed, elapsedMs, ...result });
 }
