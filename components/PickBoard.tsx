@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE, PICK_LIMIT } from "@/lib/rules";
 import { BoardTile, EmptyTile, PreviewNotice, PrizeCard, useBoardMetrics, type Prize } from "./boardparts";
+import { IconHandPick, IconMoon, IconSparkle } from "./icons";
 
 type State =
   | { kind: "choosing" }
@@ -84,7 +85,10 @@ export function PickBoard({ board, signedIn, playedToday }: {
   return (
     <>
       <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
-        <span className="text-[34px] leading-none">{state.kind === "walking" ? "🧞" : spent ? "🌙" : "👆"}</span>
+        <span className="roundmark">
+          {state.kind === "walking" ? <span className="text-[26px] leading-none">🧞</span>
+            : spent ? <IconMoon size={22} /> : <IconHandPick size={22} />}
+        </span>
         <div className="min-w-[240px] flex-1">
           <div className="text-[15px] font-semibold">Your shortlist</div>
           <p className="text-[13px] text-ink-soft">
@@ -106,7 +110,15 @@ export function PickBoard({ board, signedIn, playedToday }: {
             disabled={chosen.length === 0 || spent || state.kind === "walking"}
             className="btn btn-primary"
           >
-            {state.kind === "walking" ? "Choosing…" : spent ? "Come back tomorrow" : "🧞 Send the genie"}
+            {state.kind === "walking" ? (
+              "Choosing…"
+            ) : spent ? (
+              "Come back tomorrow"
+            ) : (
+              <>
+                <IconSparkle /> Send the genie
+              </>
+            )}
           </button>
         </div>
       </div>

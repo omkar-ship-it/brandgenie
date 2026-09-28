@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE, CATEGORY_ACCENT, CATEGORY_ICON, rupees } from "@/lib/rules";
 import { PreviewNotice, PrizeCard } from "./boardparts";
+import { IconMoon, IconSteps } from "./icons";
 
 /** 1 234 clicks reads as "1.2k" once a tile gets busy. */
 function compact(n: number) {
@@ -137,8 +138,14 @@ export function Board({
     <>
       {/* --------------------------------- the round */}
       <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
-        <span className="text-[34px] leading-none">
-          {isMerchant ? "🧞" : busy ? "🧞" : playedToday || state.kind === "done" ? "🌙" : "😴"}
+        <span className="roundmark">
+          {isMerchant || busy ? (
+            <span className="text-[26px] leading-none">🧞</span>
+          ) : spent ? (
+            <IconMoon size={22} />
+          ) : (
+            <IconSteps size={22} />
+          )}
         </span>
 
         {/* A floor width so the button drops to its own line rather than
@@ -173,7 +180,15 @@ export function Board({
 
         {isMerchant ? null : (
           <button onClick={startRound} disabled={busy || spent || board.length === 0} className="btn btn-primary">
-            {busy ? "He’s off…" : spent ? "Come back tomorrow" : "🧞 Wake the genie"}
+            {busy ? (
+              "He’s off…"
+            ) : spent ? (
+              "Come back tomorrow"
+            ) : (
+              <>
+                <IconSteps /> Wake the genie
+              </>
+            )}
           </button>
         )}
       </div>

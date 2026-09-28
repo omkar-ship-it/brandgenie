@@ -122,6 +122,17 @@ const anonStop = await call("/api/play/walk");
 ok("stop: signed out gets a preview plan", anonStop.status === 200 && anonStop.data.preview === true,
   `preview=${anonStop.data.preview}`);
 
+// what a signed-out visitor can see without an account
+const publicBrand = await (await fetch(BASE + "/brand")).text();
+ok("public: the brand page states the price without a login",
+  /Costs from/.test(publicBrand) && /Places taken/.test(publicBrand) && !/Sign in with email/.test(publicBrand));
+const publicWish = await (await fetch(BASE + "/wish")).text();
+ok("public: the wish page shows the countdown and the feed",
+  /window opens in|11:11/.test(publicWish) && /What people are wishing for/.test(publicWish));
+const publicBoard = await (await fetch(BASE + "/")).text();
+ok("public: the real board shows the brands but gates the round",
+  /Sign in to play/.test(publicBoard) && !/Start him walking/.test(publicBoard));
+
 await new Promise((r) => setTimeout(r, 1100));
 const anonStopped = await call("/api/play/walk", { method: "POST", body: { token: anonStop.data.token, elapsedMs: 1050 } });
 ok("stop: a signed-out stop awards nothing", anonStopped.status === 200 && anonStopped.data.preview === true

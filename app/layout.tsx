@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, IBM_Plex_Mono } from "next/font/google";
 import Link from "next/link";
 import { getSessionUser } from "@/lib/session";
+import { IconGift, IconStore, IconTag } from "@/components/icons";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -66,7 +67,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                     color: isMerchant ? "#fff" : "var(--ink-soft)",
                   }}
                 >
-                  {isMerchant ? "🏪 Brand" : "🎁 Player"}
+                  {isMerchant ? (
+                    <>
+                      <IconStore size={13} /> Brand
+                    </>
+                  ) : (
+                    <>
+                      <IconGift size={13} /> Player
+                    </>
+                  )}
                 </span>
                 <span className="hidden text-ink-soft sm:inline">{user.email}</span>
                 <form action="/api/auth/logout" method="post">
@@ -85,8 +94,12 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                   className="btn btn-primary px-4 py-1.5 text-[12.5px]"
                 >
                   {/* One flex item, so .btn's gap doesn't open up mid-label. */}
+                  {/* Icon and label are the two flex items; the optional
+                      words live *inside* the label so .btn's gap can't open
+                      a hole in the middle of it. */}
+                  <IconTag size={14} />
                   <span>
-                    🏪 Bid<span className="hidden sm:inline"> for a spot</span>
+                    Bid<span className="hidden sm:inline"> for a spot</span>
                   </span>
                 </Link>
               </>

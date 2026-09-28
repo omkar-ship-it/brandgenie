@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
 import { CATEGORY_ACCENT, rupees } from "@/lib/rules";
+import { IconEye } from "./icons";
 
 /** 1 234 clicks reads as "1.2k" once a tile gets busy. */
 export function compact(n: number) {
@@ -215,7 +216,7 @@ export function PrizeCard({
 export function PreviewNotice({ signInHref }: { signInHref: string }) {
   return (
     <p className="previewbar mb-5">
-      <span className="text-[17px]">👀</span>
+      <IconEye size={17} />
       <span className="flex-1">
         You&rsquo;re trying this one out — play as many times as you like, but nothing is awarded and no
         brand&rsquo;s stock is used.

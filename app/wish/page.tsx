@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { and, desc, eq } from "drizzle-orm";
 import { db, hasDb } from "@/lib/db";
 import { wishes } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
-import { CATEGORY_ICON, dayKey, isWishWindowOpen, msUntilWishWindow, WISHES_PER_DAY } from "@/lib/rules";
+import { CATEGORY_ICON, dayKey, isWishWindowOpen, msUntilWishWindow } from "@/lib/rules";
 import { WishWindow, type MyWish } from "@/components/WishWindow";
 
 export const dynamic = "force-dynamic";
@@ -46,22 +45,17 @@ export default async function WishPage() {
         </p>
       </header>
 
-      {user ? (
-        <WishWindow open={open} msUntil={msUntil} used={mine.length} mine={mine} />
-      ) : (
-        <div className="card p-8 text-center">
-          <div className="text-[34px]">{open ? "🌟" : "🕚"}</div>
-          <h2 className="mt-2 text-[19px] font-semibold">
-            {open ? "The window is open right now" : "Sign in before 11:11"}
-          </h2>
-          <p className="mx-auto mt-1 max-w-[36ch] text-[13.5px] text-ink-soft">
-            You get {WISHES_PER_DAY} wishes a day, and we need an email to tie them to.
-          </p>
-          <Link href="/login?next=/wish" className="btn btn-primary mt-5">
-            Sign in with email
-          </Link>
-        </div>
-      )}
+      {/* The countdown and the feed are the same for everyone, so a
+          signed-out visitor sees the thing itself rather than a locked door
+          with the thing described behind it. Only the form needs an account,
+          because a wish has to belong to somebody. */}
+      <WishWindow
+        open={open}
+        msUntil={msUntil}
+        used={mine.length}
+        mine={mine}
+        signedIn={Boolean(user)}
+      />
 
       {recent.length > 0 && (
         <section className="mt-8">

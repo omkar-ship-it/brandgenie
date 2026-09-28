@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CATEGORY_ACCENT, REDEEM_WINDOW_SECONDS } from "@/lib/rules";
+import { IconCart, IconCounter, IconGift } from "./icons";
 
 export type RewardCard = {
   code: string;
@@ -146,7 +147,15 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
 
                 <div className="mt-2 flex items-center gap-2 text-[11px] text-ink-soft">
                   <span className="pill border border-line">
-                    {r.redemptionType === "online" ? "🛒 Use online" : "🏪 At the counter"}
+                    {r.redemptionType === "online" ? (
+                      <>
+                        <IconCart size={13} /> Use online
+                      </>
+                    ) : (
+                      <>
+                        <IconCounter size={13} /> At the counter
+                      </>
+                    )}
                   </span>
                   {r.redemptionType === "online" && r.couponCode && (
                     <button
@@ -191,7 +200,7 @@ export function RewardList({ rewards }: { rewards: RewardCard[] }) {
                       </button>
                     )}
                     <button onClick={() => setGiftFor(r)} className="btn btn-ghost">
-                      🎁 Gift it
+                      <IconGift size={14} /> Gift it
                     </button>
                   </div>
                 )}

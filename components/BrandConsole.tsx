@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { BID_STEP_PAISE, CATEGORIES, CATEGORY_ICON, rupees } from "@/lib/rules";
 import { TilePreview } from "./TilePreview";
+import { IconCart, IconCounter } from "./icons";
 
 export type BrandDraft = {
   name: string;
@@ -396,13 +397,13 @@ export function BrandConsole({
           {[
             {
               value: "counter",
-              icon: "🏪",
+              icon: <IconCounter size={19} />,
               title: "At your counter",
               blurb: "Staff see a live code with a 30-second timer. Nothing to set up.",
             },
             {
               value: "online",
-              icon: "🛒",
+              icon: <IconCart size={19} />,
               title: "On your website",
               blurb: "We hand out one of your own discount codes per win.",
             },
@@ -416,7 +417,7 @@ export function BrandConsole({
                 form.redemptionType === t.value ? "border-brand bg-sunk" : "border-line bg-bg hover:border-brand"
               }`}
             >
-              <span className="text-[18px]">{t.icon}</span>
+              <span className="text-ink-soft">{t.icon}</span>
               <span className="mt-1 block text-[13.5px] font-semibold">{t.title}</span>
               <span className="mt-0.5 block text-[11.5px] leading-snug text-ink-soft">{t.blurb}</span>
             </button>

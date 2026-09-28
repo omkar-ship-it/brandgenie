@@ -505,6 +505,19 @@ h3 {
   color: var(--ink-soft);
 }
 
+/* The round card's leading mark: an icon and the genie emoji both need to
+   sit in the same footprint or the card jumps as the state changes. */
+.roundmark {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 13px;
+  background: var(--sunk);
+  color: var(--ink-soft);
+}
+
 /* ------------------------------------------------------- logos */
 
 .logo-slot {

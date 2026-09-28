@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/session";
 import { getBoard, getBrandForUser } from "@/lib/board";
 import { razorpayConfigured } from "@/lib/razorpay";
-import { BID_BASE_PAISE, BID_STEP_PAISE, DEFAULT_REWARD_VALID_DAYS, rupees } from "@/lib/rules";
+import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, DEFAULT_REWARD_VALID_DAYS, rupees } from "@/lib/rules";
+import { IconStore, IconTag } from "@/components/icons";
 import { BrandConsole, type BrandDraft } from "@/components/BrandConsole";
 import { BrandStatsPanel } from "@/components/BrandStats";
 import { getBrandStats, getCouponCounts } from "@/lib/stats";
@@ -28,25 +29,78 @@ const EMPTY: BrandDraft = {
 export default async function BrandPage() {
   const user = await getSessionUser();
 
+  const board = await getBoard();
+  const topBid = board[0]?.bidPaise ?? 0;
+  const openPlaces = BOARD_SIZE - board.length;
+  const entryPaise =
+    openPlaces > 0
+      ? BID_BASE_PAISE
+      : Math.max(BID_BASE_PAISE, (board.at(-1)?.bidPaise ?? 0) + BID_STEP_PAISE);
+
+  /**
+   * Signed out this used to be a sign-in wall with nothing on it, which asks
+   * a brand to create an account before finding out what any of this costs.
+   * Everything here is public anyway — the board shows the prices — so show
+   * the offer and let the account come after the decision.
+   */
   if (!user) {
     return (
-      <div className="mx-auto max-w-[460px] px-4 py-16 text-center">
-        <div className="text-[34px]">🏪</div>
-        <h1 className="mt-2 text-[22px] font-semibold">For brands</h1>
-        <p className="mx-auto mt-2 max-w-[38ch] text-[13.5px] text-ink-soft">
-          Sign in with your email, describe what you&rsquo;re giving away, and bid for a place on the board.
+      <div className="mx-auto max-w-[900px] px-4 py-10 sm:px-6">
+        <header className="mb-7 max-w-[62ch]">
+          <span className="mono text-[11px] tracking-wide text-ink-soft uppercase">For brands</span>
+          <h1 className="mt-1 text-[28px] font-semibold">
+            Put your brand where people are already looking for something to try
+          </h1>
+          <p className="mt-2 text-[14px] text-ink-soft">
+            {BOARD_SIZE} places on one board. Customers get a round a day and walk away with a reward from
+            whoever they land on. You decide what you&rsquo;re giving away and how much stock to put behind it.
+          </p>
+        </header>
+
+        <div className="mb-6 grid gap-4 sm:grid-cols-3">
+          <Figure label="Places taken" value={`${board.length}/${BOARD_SIZE}`} note={openPlaces > 0 ? `${openPlaces} still open` : "outbid someone to get on"} />
+          <Figure label="Costs from" value={rupees(entryPaise)} note={`rises in ${rupees(BID_STEP_PAISE)} steps`} />
+          <Figure label="Top bid today" value={rupees(topBid)} note="whoever holds #1" />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Step n={1} title="Describe what you're giving away">
+            A line about the brand, and one reward — a free coffee, a first-order discount, a trial. You set how
+            many and how long they stay valid.
+          </Step>
+          <Step n={2} title="Pick how it's redeemed">
+            At your counter, where staff see a live code on a 30-second timer. Or online, where we hand out one
+            of your own single-use discount codes per win.
+          </Step>
+          <Step n={3} title="Bid for your place">
+            Position is purely what you bid, highest first. The higher you sit, the sooner the genie reaches you
+            on every walk.
+          </Step>
+        </div>
+
+        <div className="card mt-6 flex flex-wrap items-center gap-4 p-5">
+          <IconStore size={24} className="text-gold" />
+          <p className="min-w-[220px] flex-1 text-[13px] text-ink-soft">
+            You&rsquo;ll see your tile exactly as customers do, plus how many people opened it, how many rewards
+            went out and how many came back redeemed.
+          </p>
+          <Link href="/login?next=/brand&as=merchant" className="btn btn-primary">
+            <IconTag /> Get started
+          </Link>
+        </div>
+
+        <p className="mt-5 text-center text-[12.5px] text-ink-soft">
+          Want to see it from the customer&rsquo;s side first?{" "}
+          <Link href="/try/walk" className="font-semibold text-brand underline-offset-2 hover:underline">
+            Try a round without signing in
+          </Link>
         </p>
-        <Link href="/login?next=/brand&as=merchant" className="btn btn-primary mt-6">
-          Sign in with email
-        </Link>
       </div>
     );
   }
 
   const owned = await getBrandForUser(user.id);
-  const board = await getBoard();
   const position = owned ? (board.findIndex((e) => e.brandId === owned.brand.id) + 1 || null) : null;
-  const topBid = board[0]?.bidPaise ?? 0;
 
   const draft: BrandDraft = owned
     ? {
@@ -108,6 +162,26 @@ export default async function BrandPage() {
         suggestedPaise={suggested}
         minPaise={minPaise}
       />
+    </div>
+  );
+}
+
+function Figure({ label, value, note }: { label: string; value: string; note: string }) {
+  return (
+    <div className="card p-4">
+      <div className="text-[10.5px] font-semibold tracking-wide text-ink-soft uppercase">{label}</div>
+      <div className="mono mt-1 text-[22px] leading-none font-semibold">{value}</div>
+      <div className="mt-1 text-[11.5px] text-ink-soft">{note}</div>
+    </div>
+  );
+}
+
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <div className="card p-5">
+      <span className="mono grid h-6 w-6 place-items-center rounded-lg bg-sunk text-[11px] font-semibold">{n}</span>
+      <h2 className="mt-2 text-[14.5px] font-semibold">{title}</h2>
+      <p className="mt-1 text-[12.5px] text-ink-soft">{children}</p>
     </div>
   );
 }

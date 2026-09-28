@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE } from "@/lib/rules";
 import { BoardTile, EmptyTile, PreviewNotice, PrizeCard, useBoardMetrics, type Prize } from "./boardparts";
+import { IconClock, IconMoon, IconPlay, IconStop, IconSteps } from "./icons";
 
 type Plan = { token: string; tickMs: number; maxMs: number; order: number[] };
 type State =
@@ -27,12 +29,15 @@ export function StopBoard({
   playedToday,
   isMerchant = false,
   backTo = "/try/stop",
+  allowAnonymous = true,
 }: {
   board: BoardEntry[];
   signedIn: boolean;
   playedToday: boolean;
   isMerchant?: boolean;
   backTo?: string;
+  /** The real board asks for an account; the try boards don't. */
+  allowAnonymous?: boolean;
 }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [token, setToken] = useState(board[0]?.position ?? 1);
@@ -121,19 +126,22 @@ export function StopBoard({
     setState({ kind: "done", landed: data.landed, prize: data.prize, preview: Boolean(data.preview) });
   }
 
-  // Signed out the board is a demo: it awards nothing, so it can be
-  // replayed as often as someone likes.
+  // On a gated board (the real one) a signed-out visitor can look but not
+  // play. Where anonymous play is allowed, a round awards nothing, so it can
+  // be replayed as often as someone likes.
   const spent = signedIn && (playedToday || state.kind === "done");
   const walking = state.kind === "walking";
   // Named on the dock so you can see who you're about to stop on without
   // hunting for the highlighted tile.
   const onTile = board.find((e) => e.position === token);
+  const requiresSignIn = !signedIn && !allowAnonymous;
 
   return (
     <>
       <div className="card mb-5 flex flex-wrap items-center gap-4 p-5">
-        <span className="text-[34px] leading-none">
-          {isMerchant ? "🧞" : walking ? "🧞" : spent ? "🌙" : "⏱️"}
+        <span className="roundmark">
+          {isMerchant || walking ? <span className="text-[26px] leading-none">🧞</span>
+            : spent ? <IconMoon size={22} /> : <IconClock size={22} />}
         </span>
         <div className="min-w-[240px] flex-1">
           <div className="text-[15px] font-semibold">
@@ -141,7 +149,9 @@ export function StopBoard({
             {walking && <span className="mono ml-2 text-[12px] font-normal text-ink-soft">on #{token}</span>}
           </div>
           <p className="text-[13px] text-ink-soft">
-            {isMerchant
+            {requiresSignIn
+              ? "Sign in and he'll walk the board for you — stop him on the brand you want and their reward is yours."
+              : isMerchant
               ? "Customers stop him wherever they like — the higher your position, the sooner he reaches you. The round isn't yours to take."
               : spent
               ? "That's your round for today."
@@ -152,11 +162,23 @@ export function StopBoard({
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}
         </div>
 
-        {isMerchant ? null : walking ? (
+        {isMerchant ? null : requiresSignIn ? (
+          <Link href={`/login?next=${backTo}`} className="btn btn-primary">
+            <IconPlay /> Sign in to play
+          </Link>
+        ) : walking ? (
           <span className="mono text-[12px] text-ink-soft">stop him below ↓</span>
         ) : (
           <button onClick={start} disabled={spent || state.kind === "stopping" || board.length === 0} className="btn btn-primary">
-            {state.kind === "stopping" ? "…" : spent ? "Come back tomorrow" : "🧞 Start him walking"}
+            {state.kind === "stopping" ? (
+              "…"
+            ) : spent ? (
+              "Come back tomorrow"
+            ) : (
+              <>
+                <IconSteps /> Start him walking
+              </>
+            )}
           </button>
         )}
       </div>
@@ -167,7 +189,7 @@ export function StopBoard({
       {walking && (
         <div className="stop-dock">
           <button onClick={() => stop(state.plan)} className="btn btn-stop" autoFocus>
-            ✋ STOP
+            <IconStop size={17} /> STOP
           </button>
           <span className="stop-dock-hint">
             on <strong>#{token}</strong>
@@ -177,7 +199,7 @@ export function StopBoard({
         </div>
       )}
 
-      {!signedIn && !isMerchant && <PreviewNotice signInHref={`/login?next=${backTo}`} />}
+      {!signedIn && !isMerchant && allowAnonymous && <PreviewNotice signInHref={`/login?next=${backTo}`} />}
 
       {state.kind === "done" && (
         <PrizeCard

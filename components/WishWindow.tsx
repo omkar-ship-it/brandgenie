@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORIES, CATEGORY_ICON, WISHES_PER_DAY } from "@/lib/rules";
+import { IconClock, IconSparkle } from "./icons";
 
 export type MyWish = { id: string; text: string; category: string; at: string };
 
@@ -19,11 +20,13 @@ export function WishWindow({
   msUntil,
   used,
   mine,
+  signedIn,
 }: {
   open: boolean;
   msUntil: number;
   used: number;
   mine: MyWish[];
+  signedIn: boolean;
 }) {
   const router = useRouter();
   // Seeded from the server so the first paint matches, then ticked locally.
@@ -69,15 +72,19 @@ export function WishWindow({
       <div className={`card p-6 text-center ${open ? "" : "opacity-95"}`}>
         {open ? (
           <>
-            <div className="text-[34px]">🌟</div>
+            <IconSparkle size={30} className="mx-auto text-gold" />
             <h2 className="mt-2 text-[19px] font-semibold">It&rsquo;s 11:11 — make your wish</h2>
             <p className="mt-1 text-[13px] text-ink-soft">
-              {left > 0 ? `${left} of ${WISHES_PER_DAY} left today.` : "That's both your wishes for today."}
+              {!signedIn
+              ? `Everyone gets ${WISHES_PER_DAY} a day.`
+              : left > 0
+                ? `${left} of ${WISHES_PER_DAY} left today.`
+                : "That's both your wishes for today."}
             </p>
           </>
         ) : (
           <>
-            <div className="text-[34px]">🕚</div>
+            <IconClock size={30} className="mx-auto text-ink-soft" />
             <h2 className="mt-2 text-[19px] font-semibold">The window opens in</h2>
             <div className="mono mt-2 text-[40px] leading-none font-semibold tracking-tight">{clock(remaining)}</div>
             <p className="mt-2 text-[13px] text-ink-soft">
@@ -86,7 +93,27 @@ export function WishWindow({
           </>
         )}
 
-        {open && left > 0 && (
+        {open && !signedIn && (
+          <div className="mx-auto mt-6 max-w-[440px]">
+            <a href="/login?next=/wish" className="btn btn-primary w-full">
+              Sign in to make yours
+            </a>
+            <p className="mt-2 text-[12px] text-ink-soft">
+              A wish has to belong to someone, so brands know who to grant it for.
+            </p>
+          </div>
+        )}
+
+        {!open && !signedIn && (
+          <p className="mt-4 text-[12.5px] text-ink-soft">
+            <a href="/login?next=/wish" className="font-semibold text-brand underline-offset-2 hover:underline">
+              Sign in
+            </a>{" "}
+            before it opens and you&rsquo;ll be ready.
+          </p>
+        )}
+
+        {signedIn && open && left > 0 && (
           <div className="mx-auto mt-6 max-w-[440px] text-left">
             <label className="label">What are you wishing for?</label>
             <input

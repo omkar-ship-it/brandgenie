@@ -6,6 +6,7 @@ import { getSessionUser } from "@/lib/session";
 import { getBoard } from "@/lib/board";
 import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, dayKey, rupees } from "@/lib/rules";
 import { StopBoard } from "@/components/StopBoard";
+import { IconLamp, IconStore, IconTag, IconTrendUp } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -59,13 +60,13 @@ export default async function BoardPage() {
 
       {board.length === 0 ? (
         <div className="card p-10 text-center">
-          <div className="text-[34px]">🪔</div>
+          <IconLamp size={32} className="mx-auto text-ink-soft" />
           <h2 className="mt-2 text-[18px] font-semibold">Nobody&rsquo;s on the board yet</h2>
           <p className="mx-auto mt-1 max-w-[40ch] text-[13.5px] text-ink-soft">
             The first brand to bid takes position #1 and stays there until someone outbids them.
           </p>
           <Link href={bidHref} className="btn btn-primary mt-5">
-            🏪 Claim position #1
+            <IconTag /> Claim position #1
           </Link>
         </div>
       ) : (
@@ -75,6 +76,7 @@ export default async function BoardPage() {
           isMerchant={isMerchant}
           playedToday={playedToday}
           backTo="/"
+          allowAnonymous={false}
         />
       )}
 
@@ -82,7 +84,7 @@ export default async function BoardPage() {
           beside Play: the two numbers a brand actually weighs — how much
           room is left and what it costs to get in — sit next to the CTA. */}
       <aside className="bidbar mt-5">
-        <span className="text-[26px] leading-none">🏪</span>
+        <IconStore size={24} className="text-gold" />
         <div className="min-w-[200px] flex-1">
           <div className="text-[14.5px] font-semibold">
             {isMerchant
@@ -97,7 +99,15 @@ export default async function BoardPage() {
           </p>
         </div>
         <Link href={bidHref} className="btn btn-primary">
-          {isMerchant ? "📈 Raise your bid" : "Bid for a spot"}
+          {isMerchant ? (
+            <>
+              <IconTrendUp /> Raise your bid
+            </>
+          ) : (
+            <>
+              <IconTag /> Bid for a spot
+            </>
+          )}
         </Link>
       </aside>
 
