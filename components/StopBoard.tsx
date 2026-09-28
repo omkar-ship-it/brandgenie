@@ -41,6 +41,7 @@ export function StopBoard({
   backTo = "/try/stop",
   allowAnonymous = true,
   demo = false,
+  showcase = false,
 }: {
   board: BoardEntry[];
   signedIn: boolean;
@@ -51,11 +52,14 @@ export function StopBoard({
   allowAnonymous?: boolean;
   /** Showcase board: resolves and animates, but awards nothing. */
   demo?: boolean;
+  /** Let the bid buy area on the grid rather than just a rank number. */
+  showcase?: boolean;
 }) {
   const [state, setState] = useState<State>({ kind: "idle" });
   const [token, setToken] = useState(board[0]?.position ?? 1);
   const [error, setError] = useState("");
-  const { attachBoard, boardRef, ready, cellStyle } = useBoardMetrics();
+  const { attachBoard, boardRef, ready, cellStyle, measuredStyle } = useBoardMetrics();
+  const [genieBox, setGenieBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
   const { selected, openBrand, closeBrand } = useBrandSheet();
   const timer = useRef<number | null>(null);
 
@@ -82,6 +86,16 @@ export function StopBoard({
     const tile = boardRef.current?.querySelectorAll(".tile")[token - 1];
     tile?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [token, state.kind, boardRef]);
+
+  // A showcase grid has tiles of different sizes, so his box is read off the
+  // tile he's on rather than derived from one cell width.
+  useEffect(() => {
+    const place = () => setGenieBox(measuredStyle(token));
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, board.length, showcase]);
 
   // Space or Enter stops him too — by the time he's near the bottom of a
   // long board, reaching for a key beats reaching for a button.
@@ -224,7 +238,7 @@ export function StopBoard({
         />
       )}
 
-      <div className="board" ref={attachBoard}>
+      <div className={`board${showcase ? " showcase" : ""}`} ref={attachBoard}>
         {Array.from({ length: visibleSlots(board.length) }, (_, i) => {
           const position = i + 1;
           const entry = board[i];
@@ -239,12 +253,13 @@ export function StopBoard({
               // Tapping a tile mid-walk would open a card over the board
               // just as you need to see it, so it only opens when he's still.
               onOpen={walking ? undefined : () => openBrand(entry)}
+              span={showcase ? (position === 1 ? "xl" : position <= 3 ? "wide" : undefined) : undefined}
             />
           );
         })}
 
         {ready && state.kind !== "idle" && (
-          <span className="genie" style={cellStyle(token)} aria-hidden="true">
+          <span className="genie" style={genieBox ?? cellStyle(token)} aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/genie.png" alt="" className="genie-img" />
           </span>

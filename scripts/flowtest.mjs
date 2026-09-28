@@ -206,12 +206,12 @@ ok("modes: each board keeps its own daily round", classicStillOpen.status === 20
 const merchantWalk = await call("/api/play/walk", { as: "brand" });
 ok("stop: merchants are kept out of this board too", merchantWalk.status === 403, merchantWalk.data.error);
 
-// /try/stop used to bounce to the main board, which broke the comparison
-const tryStop = await fetch(BASE + "/try/stop", { redirect: "manual" });
-ok("try/stop renders its own board rather than redirecting", tryStop.status === 200, String(tryStop.status));
-const tryStopHtml = await (await fetch(BASE + "/try/stop")).text();
-ok("try/stop is playable without an account",
-  /Start him walking/.test(tryStopHtml) && /previewbar/.test(tryStopHtml));
+const tryPage = await fetch(BASE + "/try", { redirect: "manual" });
+ok("try: the example board renders", tryPage.status === 200, String(tryPage.status));
+for (const old of ["/try/walk", "/try/pick", "/try/stop"]) {
+  const r = await fetch(BASE + old, { redirect: "manual" });
+  ok(`try: ${old} redirects to the one board`, r.status === 307 || r.status === 308, String(r.status));
+}
 
 // ---------------------------------------------------------------- redeem
 console.log("\n-- redemption");
@@ -433,7 +433,7 @@ ok("clicks: counts a tile open", good.status === 200 && good.data.ok);
 
 // The bug this guards: the main board switched mechanic and lost its tile
 // handler, so cards stopped opening and clicks stopped being counted.
-for (const page of ["/", "/try/walk", "/try/pick", "/try/stop"]) {
+for (const page of ["/", "/try"]) {
   const html = await (await fetch(BASE + page)).text();
   ok(`board ${page} still wires up its tiles`, /class="tile[^"]*"/.test(html) && /brands\/click|tile-info|BrandSheet|tile/.test(html));
 }
@@ -452,7 +452,7 @@ ok("showcase: a round awards nothing even signed in",
   demoRound.status === 200 && demoRound.data.preview === true, `preview=${demoRound.data.preview}`);
 const demoWalk = await call("/api/play/walk?demo=1", { as: "winner" });
 ok("showcase: the stop plan is a preview too", demoWalk.status === 200 && demoWalk.data.preview === true);
-const tryHtml = await (await fetch(BASE + "/try/stop")).text();
+const tryHtml = await (await fetch(BASE + "/try")).text();
 const realHtml = await (await fetch(BASE + "/")).text();
 ok("showcase: /try is populated while the real board is independent",
   (tryHtml.match(/class="tile[^"]*"/g) ?? []).length > 0);
