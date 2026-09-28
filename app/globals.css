@@ -387,11 +387,35 @@ h3 {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/**
+ * A brand whose rewards are all gone.
+ *
+ * The genie steps over these tiles rather than stopping on them, so the tile
+ * has to *look* out of play before he skips it — otherwise the skip reads as
+ * a glitch. Greyed and flattened, but still legible and still clickable: the
+ * brand paid for the position, and a customer who sees "all claimed" today
+ * is being told to come back, not that the brand isn't here.
+ */
+.tile.out {
+  background: var(--sunk);
+  border-style: dashed;
+}
+.tile.out .tile-mark,
+.tile.out .tile-name,
+.tile.out .tile-reward,
+.tile.out .tile-stats {
+  filter: grayscale(1);
+  opacity: 0.55;
+}
 .tile-out {
   position: absolute;
   inset: auto 10px 46px auto;
-  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  font-size: 9.5px;
   font-weight: 700;
+  letter-spacing: 0.04em;
   color: var(--warn);
 }
 

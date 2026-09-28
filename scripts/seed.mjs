@@ -186,32 +186,69 @@ for (const [i, [name, category, tagline, area, reward, icon, rupees, redemption]
   added++;
 }
 
-// A few wishes so the wish page has something to show between windows.
+/**
+ * Two brands that have given everything away today.
+ *
+ * A showcase board where every single tile is live never shows the state a
+ * real board is in by the afternoon, so the genie's skip and the greyed tile
+ * go undemonstrated — to both customers and the brands deciding whether to
+ * bid. One of each redemption type, because they run out differently: a
+ * counter reward runs its stock down, an online one runs its code batch dry.
+ *
+ * Idempotent, so it survives a re-seed that skips existing brands.
+ */
+const CLAIMED_OUT = ["Kaapi Kettle", "Sur Stream"];
+for (const name of CLAIMED_OUT) {
+  const { rows } = await client.query(
+    `update rewards set remaining = 0
+       from brands
+      where rewards.brand_id = brands.id and brands.is_demo = true and brands.name = $1
+      returning rewards.id`,
+    [name]
+  );
+  if (!rows.length) continue;
+  // For an online reward the batch *is* the stock, so leaving unassigned
+  // codes behind would contradict the zero.
+  await client.query(
+    `update coupon_codes set assigned_at = coalesce(assigned_at, now()) where reward_id = $1`,
+    [rows[0].id]
+  );
+  console.log(`marked "${name}" all-claimed`);
+}
+
+/**
+ * A few wishes so the wish page has something to show between windows.
+ *
+ * These are pitched at the scale the board is: the brands on it deliver,
+ * stream and ship nationwide, so the wishes have to be things a brand in
+ * any city could grant. A wish for a particular neighbourhood café is a
+ * wish nobody on this board can act on, and it quietly tells a visiting
+ * brand that this is a local listings site.
+ */
 const WISHES = [
-  ["A coffee subscription that doesn't cost a fortune", "Food & Beverage"],
-  ["Running shoes that actually suit my gait", "Fitness"],
-  ["Skincare that doesn't need a ten-step routine", "Beauty & Wellness"],
-  ["One good bag that lasts a decade", "Shopping"],
-  ["A film night with no booking fee", "Entertainment"],
-  ["Two quiet nights somewhere with hills", "Travel"],
+  ["Free delivery on my grocery orders for a month", "Shopping"],
+  ["₹100 off food delivery on the nights I can't cook", "Food & Beverage"],
+  ["A streaming subscription without the ad breaks", "Entertainment"],
+  ["Cab fares that don't double on the airport run", "Travel"],
+  ["My monthly medicines delivered instead of queued for", "Beauty & Wellness"],
+  ["A protein tub that isn't priced like a luxury", "Fitness"],
 ];
 
 const { rows: wishUser } = await client.query(
   `insert into users (email) values ('demo+wisher@brandgenie.test')
    on conflict (email) do update set email = excluded.email returning id`
 );
-const { rows: haveWishes } = await client.query(`select id from wishes where user_id = $1 limit 1`, [
-  wishUser[0].id,
-]);
-if (!haveWishes.length) {
-  for (const [text, category] of WISHES) {
-    await client.query(
-      `insert into wishes (user_id, text, category, day_key) values ($1,$2,$3,$4)`,
-      [wishUser[0].id, text, category, new Date().toISOString().slice(0, 10)]
-    );
-  }
-  console.log(`seeded ${WISHES.length} wishes`);
+// Replaced rather than left alone on a re-seed, so editing the list above
+// actually changes what the page shows. Scoped to the demo wisher's own
+// rows — a real person's wish is never touched.
+await client.query(`delete from wishes where user_id = $1`, [wishUser[0].id]);
+for (const [text, category] of WISHES) {
+  await client.query(
+    `insert into wishes (user_id, text, category, day_key) values ($1,$2,$3,$4)`,
+    [wishUser[0].id, text, category, new Date().toISOString().slice(0, 10)]
+  );
 }
+console.log(`seeded ${WISHES.length} wishes`);
 
 console.log(`seeded ${added} showcase brands (is_demo, /try boards only)`);
 await client.end();

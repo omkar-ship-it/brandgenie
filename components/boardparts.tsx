@@ -119,10 +119,12 @@ export function BoardTile({
 
   return (
     <button
-      className={`tile${hasGenie ? " has-genie" : ""}${selected ? " picked" : ""}${span ? ` span-${span}` : ""}`}
+      className={`tile${hasGenie ? " has-genie" : ""}${selected ? " picked" : ""}${span ? ` span-${span}` : ""}${
+        out ? " out" : ""
+      }`}
       onClick={onOpen}
       style={{ borderColor: outlineColor, ["--accent" as string]: accent }}
-      title={`#${position} · ${entry.name}`}
+      title={out ? `#${position} · ${entry.name} · out of rewards` : `#${position} · ${entry.name}`}
       aria-pressed={selectable ? Boolean(selected) : undefined}
     >
       <span className="tile-rank">#{position}</span>
@@ -180,7 +182,7 @@ export function BoardTile({
           <span className="opacity-60">No reward listed</span>
         )}
       </span>
-      {out && <span className="tile-out">SOLD OUT</span>}
+      {out && <span className="tile-out">ALL CLAIMED</span>}
       <span className="tile-stats">
         <span className="tile-bid" style={{ color: accent }}>
           {rupees(entry.bidPaise)}
@@ -206,12 +208,13 @@ export function PrizeCard({
   prize,
   landed,
   preview = false,
-  signInHref,
+  boardHref = "/",
 }: {
   prize: Prize | null;
   landed: number;
   preview?: boolean;
-  signInHref?: string;
+  /** Where a preview round sends someone to play for real. */
+  boardHref?: string;
 }) {
   if (!prize) {
     return (
@@ -242,8 +245,8 @@ export function PrizeCard({
         </div>
       </div>
       {preview ? (
-        <a href={signInHref ?? "/login"} className="btn btn-primary">
-          Sign in to play for real
+        <a href={boardHref} className="btn btn-primary">
+          Move to main board
         </a>
       ) : (
         <>
@@ -259,8 +262,14 @@ export function PrizeCard({
   );
 }
 
-/** Said once, above the board, so nobody thinks they're winning things. */
-export function PreviewNotice({ signInHref }: { signInHref: string }) {
+/**
+ * Said once, above the board, so nobody thinks they're winning things.
+ *
+ * The way out points at the real board rather than at a login: signing in is
+ * a step on that journey, not the destination, and someone who is already
+ * signed in was being shown a dead end.
+ */
+export function PreviewNotice({ boardHref = "/" }: { boardHref?: string }) {
   return (
     <p className="previewbar mb-5">
       <IconEye size={17} />
@@ -268,8 +277,8 @@ export function PreviewNotice({ signInHref }: { signInHref: string }) {
         You&rsquo;re trying this one out — play as many times as you like, but nothing is awarded and no
         brand&rsquo;s stock is used.
       </span>
-      <a href={signInHref} className="font-semibold underline underline-offset-2">
-        Sign in to play for real
+      <a href={boardHref} className="font-semibold underline underline-offset-2">
+        Move to main board
       </a>
     </p>
   );

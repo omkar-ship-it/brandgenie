@@ -28,14 +28,23 @@ export async function GET(req: Request) {
   const board = await getBoard(demo);
   if (board.length === 0) return NextResponse.json({ error: "No brands on the board yet." }, { status: 409 });
 
-  // He walks every paid position in board order, sold-out ones included —
-  // they're visibly marked, and stopping on one is the player's own call.
-  // That's the point of the mode: the choice, and its consequence, are theirs.
+  // He steps over any brand whose rewards are gone: the tile stays on the
+  // board, greyed and marked, but he never pauses there. Letting him stop on
+  // an empty shelf spent a player's one round a day on nothing, and made a
+  // brand's dead position look as good as a live one.
+  const live = board.filter((e) => e.rewardId && e.remaining > 0);
+  if (live.length === 0) {
+    return NextResponse.json(
+      { error: "Every brand on the board is out of rewards today. Come back tomorrow." },
+      { status: 409 }
+    );
+  }
+
   const plan = {
     userId: user?.id ?? "",
     dayKey: key,
     startedAt: Date.now(),
-    order: board.map((e) => e.position),
+    order: live.map((e) => e.position),
     preview,
     demo,
   };

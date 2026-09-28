@@ -122,7 +122,7 @@ export function WishWindow({
               maxLength={160}
               autoFocus
               onChange={(e) => setText(e.target.value)}
-              placeholder="A proper filter coffee on the way to work"
+              placeholder="Free delivery on my grocery orders for a month"
               onKeyDown={(e) => e.key === "Enter" && !busy && send()}
             />
 

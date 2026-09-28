@@ -28,10 +28,10 @@ type State =
  * Experiment B — he walks the board tile by tile and the player stops him.
  *
  * The browser times the stop because it has to, but it only reports *when*;
- * the server owns the walk order and works out where that lands. Sold-out
- * tiles stay in the walk rather than being skipped: they're visibly marked,
- * and stopping on one is the player's own call, which is the whole point of
- * a mode built on timing.
+ * the server owns the walk order and works out where that lands. Brands
+ * whose rewards are all claimed are left out of that order, so he visibly
+ * steps over them — a player only gets one round a day, and spending it on
+ * an empty shelf is a bad beat the board can simply not deal.
  */
 export function StopBoard({
   board,
@@ -163,6 +163,7 @@ export function StopBoard({
   // hunting for the highlighted tile.
   const onTile = board.find((e) => e.position === token);
   const requiresSignIn = !signedIn && !allowAnonymous;
+  const claimedOut = board.filter((e) => !e.rewardId || e.remaining <= 0).length;
 
   return (
     <>
@@ -187,6 +188,12 @@ export function StopBoard({
                 ? "Hit stop on the brand you want — he won't wait."
                 : "He'll walk the board one brand at a time. Stop him where you want, but he moves quickly."}
           </p>
+          {claimedOut > 0 && !isMerchant && (
+            <p className="mt-1 text-[12px] text-ink-soft">
+              {claimedOut} {claimedOut === 1 ? "brand has" : "brands have"} given everything away today — he walks
+              straight past {claimedOut === 1 ? "it" : "them"}.
+            </p>
+          )}
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}
         </div>
 
@@ -227,16 +234,9 @@ export function StopBoard({
         </div>
       )}
 
-      {!signedIn && !isMerchant && allowAnonymous && <PreviewNotice signInHref={`/login?next=${backTo}`} />}
+      {demo && !isMerchant && <PreviewNotice />}
 
-      {state.kind === "done" && (
-        <PrizeCard
-          prize={state.prize}
-          landed={state.landed}
-          preview={state.preview}
-          signInHref={`/login?next=${backTo}`}
-        />
-      )}
+      {state.kind === "done" && <PrizeCard prize={state.prize} landed={state.landed} preview={state.preview} />}
 
       <div className={`board${showcase ? " showcase" : ""}`} ref={attachBoard}>
         {Array.from({ length: visibleSlots(board.length) }, (_, i) => {
