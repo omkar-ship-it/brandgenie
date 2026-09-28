@@ -39,7 +39,7 @@ export default async function BoardPage() {
 
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-8 sm:px-6">
-      <LiveBar brands={board.length} rewards={stock} />
+      <LiveBar />
 
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
