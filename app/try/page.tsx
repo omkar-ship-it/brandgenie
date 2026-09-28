@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TRY_MODES, modeHref } from "@/lib/tryModes";
+import { TryIconFor } from "@/lib/tryPage";
 
 export const metadata = { title: "Three boards" };
 
@@ -9,16 +10,19 @@ export default function TryPage() {
       <header className="mb-7">
         <h1 className="text-[26px] font-semibold">Three ways to run the board</h1>
         <p className="mt-1 max-w-[62ch] text-[13.5px] text-ink-soft">
-          <strong>Stop the genie</strong> is what the board runs on now. The other two are kept here to compare
-          against. Same brands, same rewards, same one-round-a-day — each keeps its own daily round, so trying
-          one doesn&rsquo;t cost you the others.
+          <strong>Stop the genie</strong> is what the board runs on now; the other two are kept here to compare
+          against. Same brands, same rewards, same one-round-a-day — and each keeps its own daily round, so
+          trying one doesn&rsquo;t cost you the others. Signed out, all three are free to replay and award
+          nothing.
         </p>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
         {TRY_MODES.map((m) => (
           <Link key={m.mode} href={modeHref(m.slug)} className="card flex flex-col p-5 transition-transform hover:-translate-y-1">
-            <span className="text-[30px]">{m.icon}</span>
+            <span className="roundmark">
+              <TryIconFor name={m.icon} size={20} />
+            </span>
             <span className="mono mt-2 text-[11px] tracking-wide text-ink-soft uppercase">{m.tagline}</span>
             <h2 className="mt-1 text-[17px] font-semibold">{m.name}</h2>
             <p className="mt-2 flex-1 text-[13px] text-ink-soft">{m.how}</p>
@@ -32,7 +36,7 @@ export default function TryPage() {
                 <dd className="text-ink-soft">{m.brandFairness}</dd>
               </div>
             </dl>
-            <span className="btn btn-primary mt-4">{m.slug === "" ? "Go to the board" : "Try it"}</span>
+            <span className="btn btn-primary mt-4">Try it</span>
           </Link>
         ))}
       </div>

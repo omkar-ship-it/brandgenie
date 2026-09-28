@@ -186,6 +186,13 @@ ok("modes: each board keeps its own daily round", classicStillOpen.status === 20
 const merchantWalk = await call("/api/play/walk", { as: "brand" });
 ok("stop: merchants are kept out of this board too", merchantWalk.status === 403, merchantWalk.data.error);
 
+// /try/stop used to bounce to the main board, which broke the comparison
+const tryStop = await fetch(BASE + "/try/stop", { redirect: "manual" });
+ok("try/stop renders its own board rather than redirecting", tryStop.status === 200, String(tryStop.status));
+const tryStopHtml = await (await fetch(BASE + "/try/stop")).text();
+ok("try/stop is playable without an account",
+  /Start him walking/.test(tryStopHtml) && /previewbar/.test(tryStopHtml));
+
 // ---------------------------------------------------------------- redeem
 console.log("\n-- redemption");
 const winCode = p1.data.prize.code;
@@ -405,7 +412,7 @@ ok("clicks: counts a tile open", good.status === 200 && good.data.ok);
 
 // The bug this guards: the main board switched mechanic and lost its tile
 // handler, so cards stopped opening and clicks stopped being counted.
-for (const page of ["/", "/try/walk", "/try/pick"]) {
+for (const page of ["/", "/try/walk", "/try/pick", "/try/stop"]) {
   const html = await (await fetch(BASE + page)).text();
   ok(`board ${page} still wires up its tiles`, /class="tile[^"]*"/.test(html) && /brands\/click|tile-info|BrandSheet|tile/.test(html));
 }

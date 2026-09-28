@@ -3,7 +3,7 @@ export const TRY_MODES = [
   {
     slug: "walk",
     mode: "classic",
-    icon: "🧞",
+    icon: "walk",
     name: "The walk",
     tagline: "The original",
     how: "He sets off from the same tile for everyone and walks until his feet give out.",
@@ -13,7 +13,7 @@ export const TRY_MODES = [
   {
     slug: "pick",
     mode: "pick",
-    icon: "👆",
+    icon: "pick",
     name: "Pick your brands",
     tagline: "The other experiment",
     how: "Shortlist up to five brands you'd actually use, then he draws one of them.",
@@ -21,9 +21,9 @@ export const TRY_MODES = [
     brandFairness: "Brands nobody shortlists are never reached",
   },
   {
-    slug: "",
+    slug: "stop",
     mode: "stop",
-    icon: "⏱️",
+    icon: "stop",
     name: "Stop the genie",
     tagline: "Live on the board",
     how: "He walks tile by tile and you hit stop. Timing decides where he lands.",
@@ -31,5 +31,8 @@ export const TRY_MODES = [
     brandFairness: "Good timing takes the best reward every day",
   },
 ] as const;
+
+/** Keys rather than emoji, so the pages draw them with the icon set. */
+export type TryIcon = "walk" | "pick" | "stop";
 
 export const modeHref = (slug: string) => (slug ? `/try/${slug}` : "/");

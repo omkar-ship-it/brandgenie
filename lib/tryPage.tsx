@@ -5,7 +5,8 @@ import { plays } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getBoard } from "@/lib/board";
 import { dayKey } from "@/lib/rules";
-import { TRY_MODES, modeHref } from "@/lib/tryModes";
+import { TRY_MODES, modeHref, type TryIcon } from "@/lib/tryModes";
+import { IconClock, IconHandPick, IconPlay } from "@/components/icons";
 import type { RoundMode } from "@/lib/round";
 
 /** Everything the two experiment pages share but the board component. */
@@ -25,6 +26,12 @@ export async function loadTry(mode: RoundMode) {
   return { user, board, playedToday };
 }
 
+export function TryIconFor({ name, size = 14 }: { name: TryIcon; size?: number }) {
+  if (name === "pick") return <IconHandPick size={size} />;
+  if (name === "stop") return <IconClock size={size} />;
+  return <IconPlay size={size} />;
+}
+
 export function TryShell({
   mode,
   children,
@@ -42,7 +49,7 @@ export function TryShell({
             href={modeHref(m.slug)}
             className={`pill border ${m.mode === mode ? "border-brand bg-brand text-white" : "border-line bg-card text-ink-soft"}`}
           >
-            {m.icon} {m.name}
+            <TryIconFor name={m.icon} /> {m.name}
           </Link>
         ))}
         <Link href="/try" className="ml-auto text-[12px] text-ink-soft underline-offset-2 hover:underline">
