@@ -2,27 +2,11 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
-import { BOARD_SIZE, CATEGORY_ACCENT, CATEGORY_ICON, rupees } from "@/lib/rules";
-import { PreviewNotice, PrizeCard } from "./boardparts";
+import { BOARD_SIZE } from "@/lib/rules";
+import { BoardTile, BrandSheet, EmptyTile, PreviewNotice, PrizeCard, useBrandSheet } from "./boardparts";
 import { IconMoon, IconSteps } from "./icons";
 
-/** 1 234 clicks reads as "1.2k" once a tile gets busy. */
-function compact(n: number) {
-  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n);
-}
-
 const GAP = 10;
-
-function initials(name: string) {
-  const words = name.split(/\s+/).filter((w) => /[a-z]/i.test(w));
-  return (words.slice(0, 2).map((w) => w[0]).join("") || name.slice(0, 2)).toUpperCase();
-}
-
-function hue(seed: string) {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360;
-  return h;
-}
 
 type Prize = { code: string; label: string; icon: string; brandName: string; expiresAt: string };
 type PlayState =
@@ -43,7 +27,6 @@ export function Board({
   playedToday: boolean;
   startPosition: number;
 }) {
-  const [selected, setSelected] = useState<BoardEntry | null>(null);
   const [state, setState] = useState<PlayState>({ kind: "idle" });
   const [token, setToken] = useState(startPosition);
   const [hop, setHop] = useState(false);
@@ -53,6 +36,7 @@ export function Board({
   const [cols, setCols] = useState(10);
   const [gap, setGap] = useState(GAP);
   const observer = useRef<ResizeObserver | null>(null);
+  const { selected, openBrand, closeBrand } = useBrandSheet();
 
   // The board reflows to 5 columns on narrow screens, so both the cell size
   // and the column count have to be measured rather than assumed.
@@ -77,15 +61,6 @@ export function Board({
   // replayed as often as someone likes.
   const anonymous = !signedIn;
 
-  function openBrand(entry: BoardEntry) {
-    setSelected(entry);
-    // Fire-and-forget: a failed count must never block the card opening.
-    void fetch("/api/brands/click", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ brandId: entry.brandId }),
-    }).catch(() => {});
-  }
   // Once the round has run in this tab, the server's `playedToday` is stale.
   const spent = signedIn && (playedToday || state.kind === "done");
 
@@ -209,60 +184,16 @@ export function Board({
         {Array.from({ length: BOARD_SIZE }, (_, i) => {
           const position = i + 1;
           const entry = board[i];
-          if (!entry) {
-            return (
-              <div key={position} className="tile empty">
-                <span className="tile-rank">{position}</span>
-                <span className="text-[14px] text-ink-soft opacity-40">+</span>
-              </div>
-            );
-          }
-          const accent = CATEGORY_ACCENT[entry.category] ?? "var(--brand)";
-          const h = hue(entry.brandId);
-          const out = entry.remaining <= 0;
+          if (!entry) return <EmptyTile key={position} position={position} />;
           return (
-            <button
+            <BoardTile
               key={position}
-              className={`tile${token === position ? " has-genie" : ""}`}
-              onClick={() => openBrand(entry)}
-              style={{ borderColor: state.kind === "done" && state.landed === position ? "var(--good)" : undefined }}
-              title={`#${position} · ${entry.name}`}
-            >
-              <span className="tile-rank">#{position}</span>
-              <span
-                className="tile-mark"
-                style={
-                  entry.logoUrl
-                    ? undefined
-                    : { background: `linear-gradient(140deg, hsl(${h} 62% 46%), hsl(${(h + 34) % 360} 66% 32%))` }
-                }
-              >
-                {entry.logoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={entry.logoUrl} alt="" className="tile-logo" />
-                ) : (
-                  initials(entry.name)
-                )}
-              </span>
-              <span className="tile-name">{entry.name}</span>
-              <span className="tile-reward">
-                {entry.rewardLabel ? (
-                  <>
-                    {entry.rewardIcon} {entry.rewardLabel}
-                    {!out && <span className="text-ink-soft"> · {entry.remaining} left</span>}
-                  </>
-                ) : (
-                  <span className="opacity-60">No reward listed</span>
-                )}
-              </span>
-              {out && <span className="tile-out">SOLD OUT</span>}
-              <span className="tile-stats">
-                <span className="tile-bid" style={{ color: accent }}>
-                  {rupees(entry.bidPaise)}
-                </span>
-                <span className="tile-clicks">{compact(entry.clicks)} clicks</span>
-              </span>
-            </button>
+              entry={entry}
+              position={position}
+              hasGenie={token === position}
+              outlineColor={state.kind === "done" && state.landed === position ? "var(--good)" : undefined}
+              onOpen={busy ? undefined : () => openBrand(entry)}
+            />
           );
         })}
 
@@ -282,69 +213,7 @@ export function Board({
         )}
       </div>
 
-      {/* --------------------------------- brand sheet */}
-      {selected && (
-        <div
-          className="backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-label={selected.name}
-          onClick={(e) => e.target === e.currentTarget && setSelected(null)}
-        >
-          <div className="sheet p-6">
-            <div className="h-1.5 -mx-6 -mt-6 mb-5 rounded-t-[18px]" style={{ background: CATEGORY_ACCENT[selected.category] }} />
-            <div className="mono text-[11px] text-ink-soft">
-              Position #{selected.position} · bid {rupees(selected.bidPaise)} · {compact(selected.clicks)} clicks
-            </div>
-            <div className="mt-1 flex items-center gap-3">
-              {selected.logoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={selected.logoUrl} alt="" className="sheet-logo" />
-              )}
-              <h2 className="text-[21px] font-semibold">{selected.name}</h2>
-            </div>
-            {selected.tagline && <p className="mt-1 text-[13.5px] text-ink-soft">{selected.tagline}</p>}
-
-            <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">
-              <span className="pill text-white" style={{ background: CATEGORY_ACCENT[selected.category] }}>
-                {CATEGORY_ICON[selected.category]} {selected.category}
-              </span>
-              {selected.area && <span className="text-ink-soft">{selected.area}</span>}
-            </div>
-
-            {selected.rewardLabel && (
-              <div className="mt-5 rounded-xl bg-sunk p-4">
-                <div className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">Giving away</div>
-                <div className="mt-1 text-[15px] font-semibold">
-                  {selected.rewardIcon} {selected.rewardLabel}
-                </div>
-                <div className="mono mt-1 text-[11.5px] text-ink-soft">
-                  {selected.remaining} left · valid {selected.validDays} days after you win
-                </div>
-              </div>
-            )}
-
-            {(selected.website || selected.instagram) && (
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                {selected.website && (
-                  <a href={selected.website} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
-                    🌐 Website
-                  </a>
-                )}
-                {selected.instagram && (
-                  <a href={selected.instagram} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
-                    📸 Instagram
-                  </a>
-                )}
-              </div>
-            )}
-
-            <button onClick={() => setSelected(null)} className="btn btn-primary mt-5 w-full">
-              Close
-            </button>
-          </div>
-        </div>
-      )}
+      {selected && <BrandSheet entry={selected} onClose={closeBrand} />}
     </>
   );
 }

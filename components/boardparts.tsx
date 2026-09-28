@@ -2,8 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
-import { CATEGORY_ACCENT, rupees } from "@/lib/rules";
-import { IconEye } from "./icons";
+import { CATEGORY_ACCENT, CATEGORY_ICON, rupees } from "@/lib/rules";
+import { IconCart, IconCounter, IconEye } from "./icons";
 
 /** 1 234 clicks reads as "1.2k" once a tile gets busy. */
 export function compact(n: number) {
@@ -84,6 +84,7 @@ export function BoardTile({
   outlineColor,
   selectable,
   selected,
+  onInspect,
 }: {
   entry: BoardEntry;
   position: number;
@@ -92,6 +93,8 @@ export function BoardTile({
   outlineColor?: string;
   selectable?: boolean;
   selected?: boolean;
+  /** Where tapping the tile does something else, this opens the card. */
+  onInspect?: () => void;
 }) {
   const accent = CATEGORY_ACCENT[entry.category] ?? "var(--brand)";
   const h = hue(entry.brandId);
@@ -107,6 +110,26 @@ export function BoardTile({
     >
       <span className="tile-rank">#{position}</span>
       {selectable && <span className="tile-check">{selected ? "✓" : ""}</span>}
+      {onInspect && (
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label={`About ${entry.name}`}
+          className="tile-info"
+          onClick={(e) => {
+            e.stopPropagation();
+            onInspect();
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            e.preventDefault();
+            e.stopPropagation();
+            onInspect();
+          }}
+        >
+          i
+        </span>
+      )}
       <span
         className="tile-mark"
         style={
@@ -225,5 +248,110 @@ export function PreviewNotice({ signInHref }: { signInHref: string }) {
         Sign in to play for real
       </a>
     </p>
+  );
+}
+
+
+/**
+ * Opening a brand's card, plus the click it counts.
+ *
+ * Lives here rather than in one board because every board needs it: the
+ * card is how a customer decides, and the count is the number a brand is
+ * buying a position for. When the main board switched to the stop mechanic
+ * this was left behind, and tile opens silently stopped being recorded —
+ * keeping the two together is what stops that happening again.
+ */
+export function useBrandSheet() {
+  const [selected, setSelected] = useState<BoardEntry | null>(null);
+
+  const openBrand = (entry: BoardEntry) => {
+    setSelected(entry);
+    // Fire-and-forget: a failed count must never block the card opening.
+    void fetch("/api/brands/click", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brandId: entry.brandId }),
+    }).catch(() => {});
+  };
+
+  return { selected, openBrand, closeBrand: () => setSelected(null) };
+}
+
+/** The card behind a tile: who they are, what they're giving, where to find them. */
+export function BrandSheet({ entry, onClose }: { entry: BoardEntry; onClose: () => void }) {
+  const accent = CATEGORY_ACCENT[entry.category] ?? "var(--brand)";
+  const online = entry.redemptionType === "online";
+
+  return (
+    <div
+      className="backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-label={entry.name}
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="sheet p-6">
+        <div className="h-1.5 -mx-6 -mt-6 mb-5 rounded-t-[18px]" style={{ background: accent }} />
+        <div className="mono text-[11px] text-ink-soft">
+          Position #{entry.position} · bid {rupees(entry.bidPaise)} · {compact(entry.clicks)} clicks
+        </div>
+        <div className="mt-1 flex items-center gap-3">
+          {entry.logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={entry.logoUrl} alt="" className="sheet-logo" />
+          )}
+          <h2 className="text-[21px] font-semibold">{entry.name}</h2>
+        </div>
+        {entry.tagline && <p className="mt-1 text-[13.5px] text-ink-soft">{entry.tagline}</p>}
+
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11.5px]">
+          <span className="pill text-white" style={{ background: accent }}>
+            {CATEGORY_ICON[entry.category]} {entry.category}
+          </span>
+          {entry.area && <span className="text-ink-soft">{entry.area}</span>}
+        </div>
+
+        {entry.rewardLabel && (
+          <div className="mt-5 rounded-xl bg-sunk p-4">
+            <div className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">Giving away</div>
+            <div className="mt-1 text-[15px] font-semibold">
+              {entry.rewardIcon} {entry.rewardLabel}
+            </div>
+            <div className="mono mt-1 flex flex-wrap items-center gap-x-2 text-[11.5px] text-ink-soft">
+              <span className="inline-flex items-center gap-1.5">
+                {online ? <IconCart size={12} /> : <IconCounter size={12} />}
+                {online ? "used online" : "at the counter"}
+              </span>
+              <span>·</span>
+              <span>{entry.remaining > 0 ? `${entry.remaining} left` : "none left today"}</span>
+              <span>·</span>
+              <span>valid {entry.validDays} days</span>
+            </div>
+            {entry.instructions && (
+              <p className="mt-2 text-[12px] text-ink-soft">{entry.instructions}</p>
+            )}
+          </div>
+        )}
+
+        {(entry.website || entry.instagram) && (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {entry.website && (
+              <a href={entry.website} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+                Website ↗
+              </a>
+            )}
+            {entry.instagram && (
+              <a href={entry.instagram} target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+                Instagram ↗
+              </a>
+            )}
+          </div>
+        )}
+
+        <button onClick={onClose} className="btn btn-primary mt-5 w-full" autoFocus>
+          Close
+        </button>
+      </div>
+    </div>
   );
 }

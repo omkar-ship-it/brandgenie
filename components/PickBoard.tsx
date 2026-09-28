@@ -3,7 +3,16 @@
 import { useState } from "react";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE, PICK_LIMIT } from "@/lib/rules";
-import { BoardTile, EmptyTile, PreviewNotice, PrizeCard, useBoardMetrics, type Prize } from "./boardparts";
+import {
+  BoardTile,
+  BrandSheet,
+  EmptyTile,
+  PreviewNotice,
+  PrizeCard,
+  useBoardMetrics,
+  useBrandSheet,
+  type Prize,
+} from "./boardparts";
 import { IconHandPick, IconMoon, IconSparkle } from "./icons";
 
 type State =
@@ -29,6 +38,7 @@ export function PickBoard({ board, signedIn, playedToday }: {
   const [token, setToken] = useState(1);
   const [error, setError] = useState("");
   const { attachBoard, ready, cellStyle } = useBoardMetrics();
+  const { selected, openBrand, closeBrand } = useBrandSheet();
 
   // Signed out, this board is a demo: it can be replayed freely because it
   // awards nothing.
@@ -156,6 +166,8 @@ export function PickBoard({ board, signedIn, playedToday }: {
                     : undefined
               }
               onOpen={() => (pickable ? toggle(entry) : setError("That brand has nothing left to give."))}
+              // Here a tap shortlists, so the card needs a door of its own.
+              onInspect={() => openBrand(entry)}
             />
           );
         })}
@@ -166,6 +178,8 @@ export function PickBoard({ board, signedIn, playedToday }: {
           </span>
         )}
       </div>
+
+      {selected && <BrandSheet entry={selected} onClose={closeBrand} />}
 
       {chosenPositions.length > 0 && state.kind === "choosing" && (
         <p className="mono mt-4 text-center text-[12px] text-ink-soft">

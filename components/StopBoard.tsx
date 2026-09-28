@@ -4,7 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { BoardEntry } from "@/lib/board";
 import { BOARD_SIZE } from "@/lib/rules";
-import { BoardTile, EmptyTile, PreviewNotice, PrizeCard, useBoardMetrics, type Prize } from "./boardparts";
+import {
+  BoardTile,
+  BrandSheet,
+  EmptyTile,
+  PreviewNotice,
+  PrizeCard,
+  useBoardMetrics,
+  useBrandSheet,
+  type Prize,
+} from "./boardparts";
 import { IconClock, IconMoon, IconPlay, IconStop, IconSteps } from "./icons";
 
 type Plan = { token: string; tickMs: number; maxMs: number; order: number[] };
@@ -43,6 +52,7 @@ export function StopBoard({
   const [token, setToken] = useState(board[0]?.position ?? 1);
   const [error, setError] = useState("");
   const { attachBoard, boardRef, ready, cellStyle } = useBoardMetrics();
+  const { selected, openBrand, closeBrand } = useBrandSheet();
   const timer = useRef<number | null>(null);
 
   // A ref so the click handler reads the true start time rather than a
@@ -222,6 +232,9 @@ export function StopBoard({
               position={position}
               hasGenie={ready && token === position && state.kind !== "idle"}
               outlineColor={state.kind === "done" && state.landed === position ? "var(--good)" : undefined}
+              // Tapping a tile mid-walk would open a card over the board
+              // just as you need to see it, so it only opens when he's still.
+              onOpen={walking ? undefined : () => openBrand(entry)}
             />
           );
         })}
@@ -232,6 +245,8 @@ export function StopBoard({
           </span>
         )}
       </div>
+
+      {selected && <BrandSheet entry={selected} onClose={closeBrand} />}
     </>
   );
 }

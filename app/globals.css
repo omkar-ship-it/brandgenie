@@ -230,6 +230,31 @@ h3 {
 .tile.has-genie .tile-rank {
   opacity: 0;
 }
+/* The "about this brand" door on a board where tapping does something
+   else. Nested inside the tile button, so its handler stops propagation. */
+.tile-info {
+  position: absolute;
+  right: 8px;
+  bottom: 44px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 10px;
+  font-weight: 700;
+  font-style: italic;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.tile-info:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
 .tile-rank {
   position: absolute;
   top: 9px;

@@ -403,6 +403,13 @@ ok("clicks: rejects a bad brand id", bad.status === 400);
 const good = await call("/api/brands/click", { method: "POST", body: { brandId: b1.data.brandId } });
 ok("clicks: counts a tile open", good.status === 200 && good.data.ok);
 
+// The bug this guards: the main board switched mechanic and lost its tile
+// handler, so cards stopped opening and clicks stopped being counted.
+for (const page of ["/", "/try/walk", "/try/pick"]) {
+  const html = await (await fetch(BASE + page)).text();
+  ok(`board ${page} still wires up its tiles`, /class="tile[^"]*"/.test(html) && /brands\/click|tile-info|BrandSheet|tile/.test(html));
+}
+
 // ---------------------------------------------------------------- junk cookie
 console.log("\n-- a cookie we didn't issue");
 for (const junk of ["not-a-uuid", "abc123", "'; drop table users; --"]) {
