@@ -6,7 +6,8 @@ import { getSessionUser } from "@/lib/session";
 import { getBoard } from "@/lib/board";
 import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, dayKey, rupees } from "@/lib/rules";
 import { StopBoard } from "@/components/StopBoard";
-import { IconLamp, IconStore, IconTag, IconTrendUp } from "@/components/icons";
+import { IconStore, IconTag, IconTrendUp } from "@/components/icons";
+import { EmptyBoardCard } from "@/components/boardparts";
 
 export const dynamic = "force-dynamic";
 
@@ -59,16 +60,7 @@ export default async function BoardPage() {
       )}
 
       {board.length === 0 ? (
-        <div className="card p-10 text-center">
-          <IconLamp size={32} className="mx-auto text-ink-soft" />
-          <h2 className="mt-2 text-[18px] font-semibold">Nobody&rsquo;s on the board yet</h2>
-          <p className="mx-auto mt-1 max-w-[40ch] text-[13.5px] text-ink-soft">
-            The first brand to bid takes position #1 and stays there until someone outbids them.
-          </p>
-          <Link href={bidHref} className="btn btn-primary mt-5">
-            <IconTag /> Claim position #1
-          </Link>
-        </div>
+        <EmptyBoardCard bidHref={bidHref} />
       ) : (
         <StopBoard
           board={board}

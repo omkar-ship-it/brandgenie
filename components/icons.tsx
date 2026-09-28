@@ -153,17 +153,6 @@ export function IconCounter(p: IconProps) {
   );
 }
 
-/** An empty board waiting for its first brand. */
-export function IconLamp(p: IconProps) {
-  return (
-    <Svg {...p}>
-      <path d="M4 14a5 5 0 0 1 5-5h4.5a4.5 4.5 0 0 1 0 9H9a5 5 0 0 1-5-4Z" />
-      <path d="M13.5 11.5 21 9v6l-7.5-2.5" />
-      <path d="M9 18v2" />
-    </Svg>
-  );
-}
-
 /** Choosing brands yourself. */
 export function IconHandPick(p: IconProps) {
   return (

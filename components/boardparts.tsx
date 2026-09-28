@@ -388,3 +388,25 @@ export function GenieMark() {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src="/genie.png" alt="" className="h-[30px] w-auto" />;
 }
+
+
+/** Shown wherever a board has nothing on it yet. */
+export function EmptyBoardCard({ bidHref, playful = false }: { bidHref: string; playful?: boolean }) {
+  return (
+    <div className="card p-10 text-center">
+      {/* The mascot rather than an icon: an empty board is the one moment
+          there's room for him, and it reads warmer than a dashed grid. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/genie.png" alt="" className="mx-auto h-[72px] w-auto" />
+      <h2 className="mt-3 text-[18px] font-semibold">Nobody&rsquo;s on the board yet</h2>
+      <p className="mx-auto mt-1 max-w-[42ch] text-[13.5px] text-ink-soft">
+        {playful
+          ? "There's nothing here for the genie to walk yet. The first brand to bid takes position #1."
+          : "The first brand to bid takes position #1 and stays there until someone outbids them."}
+      </p>
+      <a href={bidHref} className="btn btn-primary mt-5">
+        Claim position #1
+      </a>
+    </div>
+  );
+}

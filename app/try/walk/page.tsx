@@ -1,6 +1,7 @@
 import { Board } from "@/components/Board";
 import { dayKey, genieStart } from "@/lib/rules";
 import { loadTry, TryShell } from "@/lib/tryPage";
+import { EmptyBoardCard } from "@/components/boardparts";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "The walk" };
@@ -18,14 +19,18 @@ export default async function WalkPage() {
         </span>
       </p>
 
-      <Board
-        board={board}
-        signedIn={Boolean(user)}
-        isMerchant={user?.role === "merchant"}
-        playedToday={playedToday}
-        startPosition={genieStart(dayKey(), Math.max(1, board.length))}
-        showcase
-      />
+      {board.length === 0 ? (
+        <EmptyBoardCard bidHref="/login?next=/brand&as=merchant" playful />
+      ) : (
+        <Board
+          board={board}
+          signedIn={Boolean(user)}
+          isMerchant={user?.role === "merchant"}
+          playedToday={playedToday}
+          startPosition={genieStart(dayKey(), Math.max(1, board.length))}
+          showcase
+        />
+      )}
     </TryShell>
   );
 }
