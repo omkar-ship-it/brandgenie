@@ -1,14 +1,19 @@
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { db, hasDb } from "@/lib/db";
-import { bids, brands } from "@/lib/db/schema";
+import { bids } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getBrandForUser } from "@/lib/board";
+import { confirmBid } from "@/lib/bids";
 import { verifySignature } from "@/lib/razorpay";
 
 /**
- * The bid only goes live here, after Razorpay's signature checks out. The
- * board reads `brands.bidPaise`, which nothing else writes.
+ * The brand's browser coming back from checkout — the fast path.
+ *
+ * It isn't the only path: `../webhook` hears the same payment from Razorpay
+ * directly, which is what covers a brand who pays and closes the tab. The
+ * two race and either may win, so neither writes the board itself — both
+ * hand off to `confirmBid`, which owns that transition.
  */
 export async function POST(req: Request) {
   if (!hasDb || !db) return NextResponse.json({ error: "Not available right now." }, { status: 503 });
@@ -39,22 +44,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Payment doesn't match this bid." }, { status: 400 });
   }
   // A genuine retry of a bid that already landed: same order, nothing to do.
+  // This also covers the webhook having got here first.
   if (bid.status === "paid") return NextResponse.json({ ok: true, alreadyPaid: true });
   if (!verifySignature(orderId, paymentId, signature)) {
+    // Marked failed for the audit trail, not as a verdict on the payment:
+    // if Razorpay really did capture it, the webhook will still confirm it,
+    // and `confirmBid` moves the board whatever this row currently says.
     await db.update(bids).set({ status: "failed" }).where(eq(bids.id, bid.id));
     return NextResponse.json({ error: "We couldn't verify that payment." }, { status: 400 });
   }
 
-  const now = new Date();
-  await db
-    .update(bids)
-    .set({ status: "paid", razorpayPaymentId: paymentId, paidAt: now })
-    .where(eq(bids.id, bid.id));
+  const result = await confirmBid({ orderId, paymentId });
+  if (!result.ok) return NextResponse.json({ error: "We couldn't record that payment." }, { status: 500 });
 
-  await db
-    .update(brands)
-    .set({ bidPaise: bid.amountPaise, bidAt: now })
-    .where(eq(brands.id, owned.brand.id));
-
-  return NextResponse.json({ ok: true, amountPaise: bid.amountPaise });
+  return NextResponse.json({ ok: true, alreadyPaid: result.alreadyPaid, amountPaise: result.amountPaise });
 }

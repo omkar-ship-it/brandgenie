@@ -11,7 +11,8 @@
     "db:generate": "drizzle-kit generate",
     "db:seed": "node --env-file=.env.local scripts/seed.mjs",
     "test:flows": "node scripts/flowtest.mjs",
-    "test:flows2": "node scripts/flowtest2.mjs"
+    "test:flows2": "node scripts/flowtest2.mjs",
+    "test:webhook": "node --env-file=.env.local scripts/webhooktest.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
