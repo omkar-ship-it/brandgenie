@@ -259,8 +259,9 @@ h3 {
   position: relative;
   /* Content decides the height — a forced square left a dead band across
      the middle of every tile. Board.tsx measures width and height
-     separately so the genie still lands on the right one. */
-  min-height: 148px;
+     separately so the genie still lands on the right one. Raised when every
+     tile gained a "what they do" line under the name. */
+  min-height: 168px;
   border-radius: 14px;
   border: 1px solid var(--line);
   background: var(--card);

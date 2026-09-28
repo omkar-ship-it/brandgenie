@@ -165,7 +165,11 @@ export function BoardTile({
         )}
       </span>
       <span className="tile-name">{entry.name}</span>
-      {span && entry.tagline && <span className="tile-tagline">{entry.tagline}</span>}
+      {/* On every tile, not just the big ones. A board of unfamiliar names
+          with no idea what any of them sell is a board nobody can scan —
+          the name is the label, but the line under it is what a customer
+          actually recognises ("food delivery", "medicines in two hours"). */}
+      {entry.tagline && <span className="tile-tagline">{entry.tagline}</span>}
       {span === "xl" && (
         <span className="tile-cat">
           {CATEGORY_ICON[entry.category]} {entry.category}
