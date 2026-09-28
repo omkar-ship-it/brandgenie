@@ -115,8 +115,29 @@ if (process.argv.includes("wipe")) {
   console.log(`cleared ${rowCount} showcase brands`);
 }
 
+/**
+ * The showcase bid ladder.
+ *
+ * #1 anchors at ₹70,000 and the tail lands just above the ₹500 floor,
+ * decaying geometrically the way a contested auction board actually does —
+ * a steep, expensive top and a long cheap tail — rather than in even steps,
+ * which reads as a price list someone typed out.
+ *
+ * The point of the spread is what it tells a brand reading the board: entry
+ * is cheap, but the top is worth many times the floor. The per-row number in
+ * BRANDS is only the intended *order*; the amount shown comes from here, so
+ * re-pricing the board is one constant rather than fifty edits.
+ *
+ * Rounded to the ₹100 step so every figure is one a brand could really bid.
+ */
+const TOP_RUPEES = 70_000;
+const TAIL_RUPEES = 900;
+const ladderRupees = (i, n) =>
+  Math.round((TOP_RUPEES * (TAIL_RUPEES / TOP_RUPEES) ** (i / (n - 1))) / 100) * 100;
+
 let added = 0;
-for (const [i, [name, category, tagline, area, reward, icon, rupees, redemption]] of BRANDS.entries()) {
+for (const [i, [name, category, tagline, area, reward, icon, , redemption]] of BRANDS.entries()) {
+  const rupees = ladderRupees(i, BRANDS.length);
   const email = `demo+${i + 1}@brandgenie.test`;
   const slug = name.toLowerCase().replace(/[^a-z]+/g, "");
 
@@ -184,6 +205,33 @@ for (const [i, [name, category, tagline, area, reward, icon, rupees, redemption]
   );
 
   added++;
+}
+
+/**
+ * Re-price an already-seeded board.
+ *
+ * The loop above skips brands that exist, so editing the ladder would
+ * otherwise only ever show up on a fresh database — and the live showcase
+ * would quietly keep last month's prices. The seeded payment rows are moved
+ * with it so the ledger doesn't contradict the board.
+ */
+let repriced = 0;
+for (const [i, [name]] of BRANDS.entries()) {
+  const paise = ladderRupees(i, BRANDS.length) * 100;
+  const { rowCount } = await client.query(
+    `update brands set bid_paise = $2 where is_demo = true and name = $1 and bid_paise <> $2`,
+    [name, paise]
+  );
+  if (!rowCount) continue;
+  await client.query(
+    `update bids set amount_paise = $2
+      from brands b where bids.brand_id = b.id and b.is_demo = true and b.name = $1`,
+    [name, paise]
+  );
+  repriced += rowCount;
+}
+if (repriced) {
+  console.log(`re-priced ${repriced} showcase bids — #1 ₹${TOP_RUPEES.toLocaleString("en-IN")}, #${BRANDS.length} ₹${TAIL_RUPEES}`);
 }
 
 /**
