@@ -458,6 +458,24 @@ ok("showcase: /try is populated while the real board is independent",
   (tryHtml.match(/class="tile[^"]*"/g) ?? []).length > 0);
 void realHtml;
 
+// ---------------------------------------------------------------- visitors
+console.log("\n-- visitor counting");
+const visit1 = await fetch(BASE + "/api/visit", { method: "POST" });
+const vcount = await visit1.json();
+const cookie = (visit1.headers.getSetCookie?.() ?? []).join(";").match(/bg_vid=([^;]+)/)?.[1];
+ok("visits: a visit is recorded", visit1.status === 200 && typeof vcount.today === "number", `today=${vcount.today}`);
+ok("visits: the visitor gets an id cookie", Boolean(cookie));
+
+const visit2 = await (await fetch(BASE + "/api/visit", { method: "POST", headers: { Cookie: `bg_vid=${cookie}` } })).json();
+ok("visits: the same visitor twice counts once", visit2.today === vcount.today, `${vcount.today} -> ${visit2.today}`);
+
+const visit3 = await (await fetch(BASE + "/api/visit", { method: "POST" })).json();
+ok("visits: a different visitor does count", visit3.today === vcount.today + 1, `${vcount.today} -> ${visit3.today}`);
+
+const home = await (await fetch(BASE + "/")).text();
+ok("visits: the strip and the one-minute way in are on the board",
+  /livebar/.test(home) && /See how it works/.test(home) && /navtry/.test(home));
+
 // ---------------------------------------------------------------- pages
 console.log("\n-- pages render");
 for (const path of ["/", "/login", "/brand", "/rewards", "/wish"]) {

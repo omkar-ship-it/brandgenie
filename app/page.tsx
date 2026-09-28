@@ -8,6 +8,7 @@ import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, dayKey, rupees } from "@/li
 import { StopBoard } from "@/components/StopBoard";
 import { IconStore, IconTag, IconTrendUp } from "@/components/icons";
 import { EmptyBoardCard } from "@/components/boardparts";
+import { LiveBar } from "@/components/LiveBar";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,8 @@ export default async function BoardPage() {
 
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-8 sm:px-6">
+      <LiveBar brands={board.length} rewards={stock} />
+
       <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-[26px] font-semibold">The Board</h1>

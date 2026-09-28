@@ -222,6 +222,25 @@ export const brandClicks = pgTable(
   (t) => [uniqueIndex("brand_clicks_brand_day_idx").on(t.brandId, t.dayKey)]
 );
 
+/**
+ * One row per visitor per day, keyed by a first-party cookie.
+ *
+ * Counting rows rather than requests is the difference between "people came
+ * here" and "a page loaded", and the number is shown to the public — so it
+ * has to be the first one. No IP, no fingerprint: a random id in a cookie
+ * the visitor can clear.
+ */
+export const visits = pgTable(
+  "visits",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    visitorId: uuid("visitor_id").notNull(),
+    dayKey: text("day_key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("visits_visitor_day_idx").on(t.visitorId, t.dayKey)]
+);
+
 // ---------------------------------------------------------------- wishes
 
 export const wishes = pgTable("wishes", {
