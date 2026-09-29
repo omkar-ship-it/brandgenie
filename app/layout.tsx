@@ -4,6 +4,7 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/session";
 import { IconGift, IconStore, IconTag } from "@/components/icons";
 import { VisitorCount } from "@/components/VisitorCount";
+import { Footer } from "@/components/Footer";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
@@ -36,7 +37,9 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 
   return (
     <html lang="en" className={`${inter.variable} ${mono.variable} h-full`}>
-      <body className="min-h-full">
+      {/* A column so the footer sits under the content on a short page
+          rather than floating up into the middle of the viewport. */}
+      <body className="flex min-h-full flex-col">
         <nav className="sticky top-0 z-40 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-card/85 px-5 py-3 backdrop-blur">
           <Link href="/" className="flex items-center gap-2 font-semibold">
             {/* The whole character, standing beside the wordmark rather than
@@ -109,7 +112,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             )}
           </div>
         </nav>
-        {children}
+        <div className="flex-1">{children}</div>
+        <Footer />
       </body>
     </html>
   );

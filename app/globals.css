@@ -894,3 +894,54 @@ h3 {
     animation: none;
   }
 }
+
+/**
+ * Policy pages.
+ *
+ * Legal text gets read two ways — skimmed for one clause by someone in a
+ * dispute, and read end to end by a payment gateway's reviewer — so the
+ * measure stays narrow, the leading is generous, and the clauses that
+ * actually cost someone money are boxed rather than buried in a paragraph.
+ */
+.legal {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+.legal p {
+  color: var(--ink-soft);
+}
+.legal strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+.legal ul {
+  display: grid;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+  color: var(--ink-soft);
+}
+.legal .mono {
+  font-size: 12.5px;
+}
+.legal-important {
+  margin: 4px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--warn);
+  background: var(--sunk);
+}
+.legal-important p {
+  color: var(--ink);
+}
+.lnk {
+  color: var(--brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lnk:hover {
+  opacity: 0.8;
+}
