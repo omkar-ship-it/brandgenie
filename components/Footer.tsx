@@ -18,11 +18,16 @@ export function Footer() {
           <div className="flex items-center gap-2 font-semibold">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/genie.png" alt="" className="brandmark" />
-            {COMPANY.product}
+            {COMPANY.boardName}
           </div>
-          <p className="mt-2 max-w-[38ch] text-[12.5px] leading-relaxed text-ink-soft">
-            Brands bid for a place on the board. Customers play one round a day for a reward. Rewards are
-            provided and honoured by the brands themselves.
+          {/* "BrandSquare" names nothing on its own — a visitor has to be
+              told what it's part of before the rest of the footer means
+              anything, so that relationship is spelled out in the first
+              line rather than assumed. */}
+          <p className="mt-2 max-w-[40ch] text-[12.5px] leading-relaxed text-ink-soft">
+            {COMPANY.boardName} ({COMPANY.boardCodename}) is a marketing board within {COMPANY.product} —{" "}
+            {COMPANY.productTagline}. Brands bid for a place on the board; customers play one round a day for a
+            reward, provided and honoured by the brand itself.
           </p>
         </div>
 
@@ -75,7 +80,7 @@ export function Footer() {
             © {legalYear()} {COMPANY.legalName}. All rights reserved.
           </span>
           <span>
-            {COMPANY.product} is a product of {COMPANY.legalName}.
+            {COMPANY.boardName} is part of {COMPANY.product}, a {COMPANY.legalName} product.
           </span>
         </div>
       </div>
