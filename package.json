@@ -12,7 +12,8 @@
     "db:seed": "node --env-file=.env.local scripts/seed.mjs",
     "test:flows": "node scripts/flowtest.mjs",
     "test:flows2": "node scripts/flowtest2.mjs",
-    "test:webhook": "node --env-file=.env.local scripts/webhooktest.mjs"
+    "test:webhook": "node --env-file=.env.local scripts/webhooktest.mjs",
+    "test:reviewlogin": "node --env-file=.env.local scripts/reviewlogintest.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

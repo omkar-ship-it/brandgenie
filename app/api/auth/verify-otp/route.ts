@@ -3,6 +3,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import { db, hasDb } from "@/lib/db";
 import { otpCodes, users } from "@/lib/db/schema";
 import { verifyOtpCode } from "@/lib/otp";
+import { isReviewLogin } from "@/lib/reviewLogin";
 import { createSession, setSessionCookie } from "@/lib/session";
 
 export async function POST(req: Request) {
@@ -15,6 +16,26 @@ export async function POST(req: Request) {
   const code = typeof body?.code === "string" ? body.code.trim() : "";
   const role = body?.role === "merchant" ? "merchant" : "customer";
   if (!email || !code) return NextResponse.json({ error: "Enter the code." }, { status: 400 });
+
+  // The reviewer's fixed code, for one address, when it's switched on. It
+  // signs in an account that already exists and never creates one, so this
+  // can't mint a user — see lib/reviewLogin.ts, and take it down when the
+  // review is approved.
+  if (isReviewLogin(email, code)) {
+    const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!existing) {
+      console.error(`[review-login] REVIEW_LOGIN_EMAIL "${email}" has no account — refusing`);
+      return NextResponse.json({ error: "That code isn't right. Check the latest email." }, { status: 401 });
+    }
+    console.warn(`[review-login] fixed code used for ${email} — remove REVIEW_LOGIN_CODE when the review is done`);
+    await setSessionCookie(await createSession(existing.id));
+    return NextResponse.json({
+      ok: true,
+      email: existing.email,
+      role: existing.role,
+      needsProfile: existing.role === "customer" && !existing.name,
+    });
+  }
 
   // Every outstanding code is checked, not just the newest.
   //
