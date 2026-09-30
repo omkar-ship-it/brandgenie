@@ -298,6 +298,26 @@ export const interestSignals = pgTable(
   (t) => [uniqueIndex("interest_signals_idx").on(t.module, t.targetSlug, t.visitorId)]
 );
 
+/**
+ * The newsletter list — deliberately its own table, keyed by email rather
+ * than user id, because half its point is that it doesn't require an
+ * account. A signed-out visitor subscribes with nothing but an address; a
+ * signed-in customer's is attached to `userId` for record-keeping, but the
+ * email is still what makes the row unique, so the same address can't end
+ * up subscribed twice under two different logins.
+ *
+ * `unsubscribedAt` exists even though nothing sets it yet — no unsubscribe
+ * link is live because no newsletter is being sent yet either. Adding one
+ * later is then a flag flip, not a migration.
+ */
+export const newsletterSubscribers = pgTable("newsletter_subscribers", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull().unique(),
+  userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+  subscribedAt: timestamp("subscribed_at", { withTimezone: true }).notNull().defaultNow(),
+  unsubscribedAt: timestamp("unsubscribed_at", { withTimezone: true }),
+});
+
 // ---------------------------------------------------------------- wishes
 
 export const wishes = pgTable("wishes", {

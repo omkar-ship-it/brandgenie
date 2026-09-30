@@ -9,12 +9,14 @@ import { StopBoard } from "@/components/StopBoard";
 import { IconStore, IconTag, IconTrendUp } from "@/components/icons";
 import { EmptyBoardCard } from "@/components/boardparts";
 import { UpcomingBadge } from "@/components/UpcomingBadge";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
+import { getNewsletterCount } from "@/lib/newsletter";
 
 export const dynamic = "force-dynamic";
 
 export default async function BoardPage() {
   const user = await getSessionUser();
-  const board = await getBoard(false, user?.id);
+  const [board, newsletterCount] = await Promise.all([getBoard(false, user?.id), getNewsletterCount()]);
 
   let playedToday = false;
   if (user && hasDb && db) {
@@ -122,6 +124,23 @@ export default async function BoardPage() {
           </p>
         </Link>
       </div>
+
+      {/* Merchants aren't the audience for "deals from leading brands" —
+          they're on the other side of that sentence — so this sits beside
+          the board for everyone else, signed in or not. */}
+      {!isMerchant && (
+        <div className="card mt-5 p-6" style={{ ["--tint" as string]: "var(--brand)" }}>
+          <div className="grid gap-5 sm:grid-cols-[1.1fr_1fr] sm:items-center">
+            <div>
+              <h2 className="text-[17px] font-semibold">Get the good stuff first</h2>
+              <p className="mt-1 text-[13px] text-ink-soft">
+                Exclusive, curated deals and offers from the brands on this board — straight to your inbox.
+              </p>
+            </div>
+            <NewsletterSignup defaultEmail={user?.email} initialCount={newsletterCount} />
+          </div>
+        </div>
+      )}
 
     </div>
   );

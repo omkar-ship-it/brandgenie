@@ -41,6 +41,11 @@ export default function PrivacyPage() {
           outcomes, Rewards issued to you and whether they were redeemed, and any wishes you post.
         </p>
         <p>
+          <strong>When you subscribe to the newsletter:</strong> the email address you give us. No account is
+          required — a signed-out visitor can subscribe with just an address. If you are signed in when you
+          subscribe, we note that so the same address doesn&rsquo;t end up subscribed twice under two logins.
+        </p>
+        <p>
           <strong>Automatically:</strong> a random visitor identifier stored in a first-party cookie so a repeat
           visit on the same day is counted once, plus ordinary server logs. We do not use third-party advertising
           trackers, and we do not build advertising profiles.
@@ -72,6 +77,11 @@ export default function PrivacyPage() {
           We process this data to perform our contract with you, to pursue our legitimate interest in operating
           and securing the platform, to comply with law, and — where required — on the basis of the consent you
           give when you provide it. You may withdraw consent at any time by deleting your account.
+        </p>
+        <p>
+          The newsletter is different: we send it, and hold your address for it, only on the basis of the consent
+          you give by subscribing. Write to {mail} at any time to withdraw it — we will not require you to
+          explain why, and it does not affect any other account you hold with us.
         </p>
       </Clause>
 

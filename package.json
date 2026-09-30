@@ -14,7 +14,8 @@
     "test:flows2": "node scripts/flowtest2.mjs",
     "test:webhook": "node --env-file=.env.local scripts/webhooktest.mjs",
     "test:reviewlogin": "node --env-file=.env.local scripts/reviewlogintest.mjs",
-    "test:upcoming": "node scripts/upcomingtest.mjs"
+    "test:upcoming": "node scripts/upcomingtest.mjs",
+    "test:newsletter": "node scripts/newslettertest.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
