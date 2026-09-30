@@ -29,9 +29,10 @@ type State =
  *
  * The browser times the stop because it has to, but it only reports *when*;
  * the server owns the walk order and works out where that lands. Brands
- * whose rewards are all claimed are left out of that order, so he visibly
- * steps over them — a player only gets one round a day, and spending it on
- * an empty shelf is a bad beat the board can simply not deal.
+ * with nothing to give — rewards all claimed, or none ever listed — are
+ * left out of that order, so he visibly steps over them — a player only
+ * gets one round a day, and spending it on an empty shelf is a bad beat
+ * the board can simply not deal.
  */
 export function StopBoard({
   board,
@@ -163,7 +164,12 @@ export function StopBoard({
   // hunting for the highlighted tile.
   const onTile = board.find((e) => e.position === token);
   const requiresSignIn = !signedIn && !allowAnonymous;
-  const claimedOut = board.filter((e) => !e.rewardId || e.remaining <= 0).length;
+  // Two different reasons a brand is skipped, counted separately — "given
+  // everything away" isn't true of a brand that never listed a reward, so
+  // the message has to say whichever of these is actually the case.
+  const noRewardCount = board.filter((e) => !e.rewardId).length;
+  const claimedOutCount = board.filter((e) => e.rewardId && e.remaining <= 0).length;
+  const skippedCount = noRewardCount + claimedOutCount;
 
   return (
     <>
@@ -188,10 +194,22 @@ export function StopBoard({
                 ? "Hit stop on the brand you want — he won't wait."
                 : "He'll walk the board one brand at a time. Stop him where you want, but he moves quickly."}
           </p>
-          {claimedOut > 0 && !isMerchant && (
+          {skippedCount > 0 && !isMerchant && (
             <p className="mt-1 text-[12px] text-ink-soft">
-              {claimedOut} {claimedOut === 1 ? "brand has" : "brands have"} given everything away today — he walks
-              straight past {claimedOut === 1 ? "it" : "them"}.
+              {claimedOutCount > 0 && (
+                <>
+                  {claimedOutCount} {claimedOutCount === 1 ? "brand is" : "brands are"} out of rewards today
+                </>
+              )}
+              {claimedOutCount > 0 && noRewardCount > 0 && " and "}
+              {noRewardCount > 0 && (
+                <>
+                  {noRewardCount} {noRewardCount === 1 ? "hasn't" : "haven't"} listed{" "}
+                  {noRewardCount === 1 ? "one" : "any"} yet
+                </>
+              )}
+              {" — he walks straight past "}
+              {skippedCount === 1 ? "it" : "them"}.
             </p>
           )}
           {error && <p className="mt-1 text-[12px] font-semibold text-warn">{error}</p>}

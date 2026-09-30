@@ -439,6 +439,12 @@ h3 {
   letter-spacing: 0.04em;
   color: var(--warn);
 }
+/* "No reward" is a neutral admin gap, not a scarcity signal the way running
+   out is — the warm/orange ALL CLAIMED tone would overstate it. */
+.tile-out-neutral {
+  background: color-mix(in srgb, var(--ink-soft) 16%, transparent);
+  color: var(--ink-soft);
+}
 
 /**
  * The genie sits at the foot of whichever tile he's on, so the brand behind

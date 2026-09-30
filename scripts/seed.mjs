@@ -339,6 +339,23 @@ for (const name of CLAIMED_OUT) {
 }
 
 /**
+ * One brand that never listed a reward at all — a different dead end than
+ * "claimed out", and the board has to say so honestly: this one hasn't
+ * given everything away, because it never had anything to give. Deletes
+ * the reward row outright rather than zeroing it, since that's the actual
+ * condition being demonstrated. Idempotent — does nothing once it's gone.
+ */
+const NO_REWARD = "Akhara Strength";
+{
+  const { rowCount } = await client.query(
+    `delete from rewards using brands
+      where rewards.brand_id = brands.id and brands.is_demo = true and brands.name = $1`,
+    [NO_REWARD]
+  );
+  if (rowCount) console.log(`removed "${NO_REWARD}"'s reward — demonstrates the no-reward state`);
+}
+
+/**
  * A few wishes so the wish page has something to show between windows.
  *
  * These are pitched at the scale the board is: the brands on it deliver,

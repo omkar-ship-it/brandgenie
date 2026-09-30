@@ -104,7 +104,13 @@ export function BoardTile({
 }) {
   const accent = CATEGORY_ACCENT[entry.category] ?? "var(--brand)";
   const h = hue(entry.brandId);
-  const out = entry.remaining <= 0;
+  // Two different reasons a tile is dead weight, and they aren't the same
+  // claim: a brand that never listed a reward hasn't "given everything
+  // away" — there was never anything to give. Both get the genie's skip and
+  // the same greyed-out look, but the badge has to say which is true.
+  const noReward = !entry.rewardId;
+  const claimedOut = Boolean(entry.rewardId) && entry.remaining <= 0;
+  const out = noReward || claimedOut;
 
   return (
     <button
@@ -113,7 +119,13 @@ export function BoardTile({
       }`}
       onClick={onOpen}
       style={{ borderColor: outlineColor, ["--accent" as string]: accent }}
-      title={out ? `#${position} · ${entry.name} · out of rewards` : `#${position} · ${entry.name}`}
+      title={
+        noReward
+          ? `#${position} · ${entry.name} · no reward listed`
+          : claimedOut
+            ? `#${position} · ${entry.name} · out of rewards`
+            : `#${position} · ${entry.name}`
+      }
       aria-pressed={selectable ? Boolean(selected) : undefined}
     >
       <span className="tile-rank">#{position}</span>
@@ -175,7 +187,11 @@ export function BoardTile({
           <span className="opacity-60">No reward listed</span>
         )}
       </span>
-      {out && <span className="tile-out">ALL CLAIMED</span>}
+      {noReward ? (
+        <span className="tile-out tile-out-neutral">NO REWARD</span>
+      ) : claimedOut ? (
+        <span className="tile-out">ALL CLAIMED</span>
+      ) : null}
       <span className="tile-stats">
         <span className="tile-bid" style={{ color: accent }}>
           {compact(entry.voteCount)} {entry.voteCount === 1 ? "vote" : "votes"}
@@ -402,7 +418,7 @@ export function BrandSheet({
           )}
         </div>
 
-        {entry.rewardLabel && (
+        {entry.rewardLabel ? (
           <div className="mt-5 rounded-xl bg-sunk p-4">
             <div className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">Giving away</div>
             <div className="mt-1 text-[15px] font-semibold">
@@ -421,6 +437,16 @@ export function BrandSheet({
             {entry.instructions && (
               <p className="mt-2 text-[12px] text-ink-soft">{entry.instructions}</p>
             )}
+          </div>
+        ) : (
+          // Distinct from "none left today" (above): this brand hasn't
+          // listed a reward at all, so there's nothing to be out of. Said
+          // outright rather than just leaving this section blank, which
+          // read as the page having failed to load something.
+          <div className="mt-5 rounded-xl bg-sunk p-4 text-center">
+            <p className="text-[12.5px] text-ink-soft">
+              No reward listed yet — the genie walks straight past this brand until they add one.
+            </p>
           </div>
         )}
 

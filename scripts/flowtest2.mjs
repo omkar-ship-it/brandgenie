@@ -346,6 +346,39 @@ q(`update rewards set remaining = 0 from brands b
    where rewards.brand_id = b.id and b.is_demo = true
      and b.name = any(array['${claimedOutNames.join("','")}'])`);
 
+// ------------------------------------------------ 4b. NO REWARD AT ALL
+// A different dead end than claimed-out — this brand never listed a
+// reward, so it's wrong to tell a customer it "gave everything away".
+console.log("\n-- a brand that never listed a reward");
+
+const noRewardRow = q(`select b.id, b.name from brands b
+                        where b.is_demo = true and not exists
+                          (select 1 from rewards r where r.brand_id = b.id)
+                        limit 1`);
+if (noRewardRow) {
+  const [noRewardId, noRewardName] = noRewardRow.split("|");
+  const noRewardPos = Number(q(`select pos from (
+      select b.id, row_number() over (
+        order by (select count(*) from votes v where v.brand_id = b.id) desc, b.bid_at asc
+      ) as pos
+      from brands b where b.is_demo = true and b.bid_paise > 0
+    ) t where id = '${noRewardId}'`));
+  ok("no-reward: its board position is known", noRewardPos > 0, `#${noRewardPos}`);
+
+  r = await call("/api/play/walk?demo=1");
+  ok("no-reward: the walk order skips it too", !(r.data.order ?? []).includes(noRewardPos), `#${noRewardPos}`);
+
+  const noRewardPage = await call("/try");
+  ok("no-reward: the brand is still shown", noRewardPage.text.includes(noRewardName), noRewardName);
+  ok("no-reward: marked NO REWARD, not ALL CLAIMED",
+    /NO REWARD/.test(noRewardPage.text) &&
+      !new RegExp(`${noRewardName}[\\s\\S]{0,400}ALL CLAIMED`).test(noRewardPage.text));
+  ok("no-reward: the skip message distinguishes it from claimed-out",
+    /hasn.{0,8}t\s+listed|haven.{0,8}t\s+listed/.test(noRewardPage.text.replace(/<[^>]+>/g, " ")));
+} else {
+  ok("no-reward: a showcase brand with no reward row exists", false, "none found — check scripts/seed.mjs");
+}
+
 // =================================================================== 5. VOTING
 console.log("\n-- voting");
 

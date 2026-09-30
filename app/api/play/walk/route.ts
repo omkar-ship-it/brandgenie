@@ -28,14 +28,15 @@ export async function GET(req: Request) {
   const board = await getBoard(demo);
   if (board.length === 0) return NextResponse.json({ error: "No brands on the board yet." }, { status: 409 });
 
-  // He steps over any brand whose rewards are gone: the tile stays on the
-  // board, greyed and marked, but he never pauses there. Letting him stop on
-  // an empty shelf spent a player's one round a day on nothing, and made a
+  // He steps over any brand with nothing to give — its rewards are gone, or
+  // it never listed one at all. Either way the tile stays on the board,
+  // greyed and marked, but he never pauses there. Letting him stop on an
+  // empty shelf spent a player's one round a day on nothing, and made a
   // brand's dead position look as good as a live one.
   const live = board.filter((e) => e.rewardId && e.remaining > 0);
   if (live.length === 0) {
     return NextResponse.json(
-      { error: "Every brand on the board is out of rewards today. Come back tomorrow." },
+      { error: "No brand on the board has a reward to give today. Come back tomorrow." },
       { status: 409 }
     );
   }
