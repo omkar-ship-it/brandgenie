@@ -244,3 +244,70 @@ export function IconBolt(p: IconProps) {
     </Svg>
   );
 }
+
+/** Slot machine — three reels. */
+export function IconSlot(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3.5" y="5" width="17" height="14" rx="2.5" />
+      <path d="M8.5 5v14M15.5 5v14" />
+      <path d="M6 9.5h1.2M11.4 9.5h1.2M16.8 9.5h1.2" />
+    </Svg>
+  );
+}
+
+/** Reflex / quick tap — a bullseye. */
+export function IconTarget(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="12" cy="12" r="0.9" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
+/** Treasure hunt — a map pin. */
+export function IconPin(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M12 21.5S5 14.8 5 9.8a7 7 0 1 1 14 0c0 5-7 11.7-7 11.7Z" />
+      <circle cx="12" cy="9.5" r="2.3" />
+    </Svg>
+  );
+}
+
+/** Invite & unlock — sharing between people. */
+export function IconShare(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="6" cy="12" r="2.3" />
+      <circle cx="17.5" cy="5.5" r="2.3" />
+      <circle cx="17.5" cy="18.5" r="2.3" />
+      <path d="M8.1 10.8l7.4-4.3M8.1 13.2l7.4 4.3" />
+    </Svg>
+  );
+}
+
+/** Guess the number — a dial with a needle. */
+export function IconDial(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M4 16a8 8 0 1 1 16 0" />
+      <path d="M12 16 16 9.5" />
+      <circle cx="12" cy="16" r="1.1" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
+/** Memory match — a grid of face-down tiles. */
+export function IconGrid(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3.5" y="3.5" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13" y="3.5" width="7.5" height="7.5" rx="1.5" />
+      <rect x="3.5" y="13" width="7.5" height="7.5" rx="1.5" />
+      <rect x="13" y="13" width="7.5" height="7.5" rx="1.5" />
+    </Svg>
+  );
+}

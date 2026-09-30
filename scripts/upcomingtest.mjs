@@ -8,6 +8,7 @@
  *   PGURL=... BASE=http://localhost:3000 node scripts/upcomingtest.mjs
  */
 import { execSync } from "child_process";
+import { LISTING_FEE_PAISE, rupees } from "../lib/rules.ts";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const PGURL = process.env.PGURL;
@@ -100,7 +101,8 @@ const corner = await fetch(`${BASE}/corner`).then((r) => r.text());
 ok("corner: the page loads", corner.length > 0);
 ok("corner: every brand is marked Upcoming", (corner.match(/Upcoming/g) ?? []).length >= 6);
 ok("corner: says this is a concept preview", /concept preview/i.test(corner));
-ok("corner: the flat-fee board language doesn't leak in by accident", !/List for ₹999/.test(corner));
+ok("corner: the flat-fee board language doesn't leak in by accident",
+  !corner.includes(`List for ${rupees(LISTING_FEE_PAISE)}`));
 
 const oneCorner = await fetch(`${BASE}/corner/sawari`).then((r) => r.text());
 ok("corner/[slug]: a known brand's page renders", /Sawari/.test(oneCorner));

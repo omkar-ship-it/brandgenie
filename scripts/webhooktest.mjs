@@ -17,6 +17,7 @@
  */
 import { createHmac } from "crypto";
 import { execSync } from "child_process";
+import { LISTING_FEE_PAISE } from "../lib/rules.ts";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const PGURL = process.env.PGURL;
@@ -89,7 +90,7 @@ const call = async (path, { method = "GET", body, as } = {}) => {
 
 console.log(`\n=== payment.captured webhook — ${BASE}\n`);
 
-const FEE = 99_900; // the flat listing fee, LISTING_FEE_PAISE in lib/rules.ts
+const FEE = LISTING_FEE_PAISE;
 
 // A merchant with a listing, ready to pay.
 const email = `t3-brand-${stamp}@brandgenie.test`;

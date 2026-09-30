@@ -15,7 +15,7 @@ export function visibleSlots(claimed: number) {
  * same for every brand. Paying it makes a brand eligible; it no longer buys
  * position. Position is earned afterwards, in customer votes.
  */
-export const LISTING_FEE_PAISE = 99_900; // ₹999
+export const LISTING_FEE_PAISE = 111_100; // ₹1,111
 export const WISHES_PER_DAY = 2;
 /** How many brands a player may shortlist in the "pick" experiment. */
 export const PICK_LIMIT = 5;

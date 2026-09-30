@@ -1,12 +1,25 @@
-import Link from "next/link";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { CATEGORY_ACCENT, CATEGORY_ICON } from "@/lib/rules";
-import { CORNER_BRANDS, GAME_LABEL } from "@/lib/upcoming";
+import { CORNER_BRANDS, GAME_LABEL, GAME_FAMILY } from "@/lib/upcoming";
 import { getInterestCounts, getMyInterest } from "@/lib/interest";
 import { initials, hue } from "@/lib/tileVisuals";
-import { InterestButton } from "@/components/InterestButton";
+import { PlayButton } from "@/components/PlayButton";
 import { UpcomingBadge } from "@/components/UpcomingBadge";
-import { IconCards, IconClock, IconDice, IconQuiz, IconWheel, IconStore } from "@/components/icons";
+import {
+  IconCards,
+  IconClock,
+  IconDial,
+  IconDice,
+  IconGrid,
+  IconPin,
+  IconQuiz,
+  IconShare,
+  IconSlot,
+  IconStore,
+  IconTarget,
+  IconWheel,
+} from "@/components/icons";
 import type { GameKind } from "@/lib/upcoming";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +31,15 @@ const GAME_ICON: Record<GameKind, typeof IconDice> = {
   timer: IconClock,
   quiz: IconQuiz,
   cards: IconCards,
+  slot: IconSlot,
+  reflex: IconTarget,
+  hunt: IconPin,
+  referral: IconShare,
+  predict: IconDial,
+  match: IconGrid,
 };
+
+const FAMILIES = [...new Set(CORNER_BRANDS.map((b) => GAME_FAMILY[b.game]))];
 
 export default async function CornerPage() {
   const store = await cookies();
@@ -32,14 +53,21 @@ export default async function CornerPage() {
         <h1 className="mt-3 text-[27px] font-semibold">Brand Corner</h1>
         <p className="mt-2 max-w-[62ch] text-[14px] text-ink-soft">
           One link, one mini-game, every platform a brand already posts on. Roll a dice, spin a wheel, stop the
-          clock at exactly ten seconds, answer a quiz — a customer plays in seconds and walks away with something,
-          wherever they found the link: a bio, a story, a QR code on a receipt.
+          clock at exactly ten seconds, answer a quiz, hunt for a code, race a friend — a customer plays in seconds
+          and walks away with something, wherever they found the link: a bio, a story, a QR code on a receipt.
         </p>
         <p className="mt-3 max-w-[62ch] text-[12.5px] text-ink-soft">
           <strong className="text-ink">This is a concept preview.</strong> None of the games below are built yet —
-          tap through to see how each one would work and its own shareable link, and tell us if it&rsquo;s worth
-          building.
+          tap <strong className="text-ink">Play</strong> to see how each one would work and its own shareable
+          link, and tell us if it&rsquo;s worth building.
         </p>
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {FAMILIES.map((f) => (
+            <span key={f} className="pill border border-line bg-card text-ink-soft">
+              {f}
+            </span>
+          ))}
+        </div>
       </div>
 
       <div className="mt-7 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -71,7 +99,10 @@ export default async function CornerPage() {
                   <span style={{ color: accent }}>
                     <Icon size={18} />
                   </span>
-                  <span className="text-[13px] font-semibold">{GAME_LABEL[b.game]}</span>
+                  <div>
+                    <div className="text-[13px] font-semibold">{GAME_LABEL[b.game]}</div>
+                    <div className="text-[10px] tracking-wide text-ink-soft uppercase">{GAME_FAMILY[b.game]}</div>
+                  </div>
                 </div>
 
                 <div className="mt-3 flex items-center gap-1.5 text-[11.5px] text-ink-soft">
@@ -82,11 +113,8 @@ export default async function CornerPage() {
                   Winning gives <span className="font-semibold text-ink">{b.reward}</span>
                 </div>
 
-                <Link href={`/corner/${b.slug}`} className="btn btn-ghost mt-4 w-full">
-                  Preview this game →
-                </Link>
-                <div className="mt-2">
-                  <InterestButton module="corner" slug={b.slug} initialCount={counts[b.slug] ?? 0} initiallyIn={mine.has(b.slug)} />
+                <div className="mt-4">
+                  <PlayButton module="corner" slug={b.slug} href={`/corner/${b.slug}`} initialCount={counts[b.slug] ?? 0} initiallyIn={mine.has(b.slug)} />
                 </div>
               </div>
             </div>

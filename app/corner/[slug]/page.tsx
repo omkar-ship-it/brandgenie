@@ -2,13 +2,25 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { CATEGORY_ACCENT, CATEGORY_ICON } from "@/lib/rules";
-import { CORNER_BRANDS, GAME_LABEL, findCornerBrand } from "@/lib/upcoming";
+import { CORNER_BRANDS, GAME_LABEL, GAME_FAMILY, findCornerBrand } from "@/lib/upcoming";
 import { getInterestCounts, getMyInterest } from "@/lib/interest";
 import { initials, hue } from "@/lib/tileVisuals";
-import { InterestButton } from "@/components/InterestButton";
+import { PlayButton } from "@/components/PlayButton";
 import { CopyLinkButton } from "@/components/CopyLinkButton";
 import { UpcomingBadge } from "@/components/UpcomingBadge";
-import { IconCards, IconClock, IconDice, IconQuiz, IconWheel } from "@/components/icons";
+import {
+  IconCards,
+  IconClock,
+  IconDial,
+  IconDice,
+  IconGrid,
+  IconPin,
+  IconQuiz,
+  IconShare,
+  IconSlot,
+  IconTarget,
+  IconWheel,
+} from "@/components/icons";
 import type { GameKind } from "@/lib/upcoming";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +31,12 @@ const GAME_ICON: Record<GameKind, typeof IconDice> = {
   timer: IconClock,
   quiz: IconQuiz,
   cards: IconCards,
+  slot: IconSlot,
+  reflex: IconTarget,
+  hunt: IconPin,
+  referral: IconShare,
+  predict: IconDial,
+  match: IconGrid,
 };
 
 /**
@@ -80,7 +98,10 @@ export default async function CornerBrandPage({ params }: { params: Promise<{ sl
             <span style={{ color: accent }}>
               <Icon size={34} />
             </span>
-            <span className="text-[19px] font-semibold">{GAME_LABEL[brand.game]}</span>
+            <div className="text-left">
+              <div className="text-[19px] font-semibold">{GAME_LABEL[brand.game]}</div>
+              <div className="text-[10.5px] tracking-wide text-ink-soft uppercase">{GAME_FAMILY[brand.game]} game</div>
+            </div>
           </div>
 
           <div className="mx-auto mt-5 max-w-[400px] rounded-xl border border-line p-4 text-left">
@@ -91,11 +112,11 @@ export default async function CornerBrandPage({ params }: { params: Promise<{ sl
           <p className="mx-auto mt-6 max-w-[46ch] text-[13px] text-ink-soft">
             This is a concept preview — the game itself isn&rsquo;t built yet. This page is {brand.name}&rsquo;s
             own link for it, the same one they&rsquo;d share on Instagram, WhatsApp, or a QR code at the counter
-            once it&rsquo;s real.
+            once it&rsquo;s real. Tapping Play just tells us you would.
           </p>
 
           <div className="mx-auto mt-6 grid max-w-[320px] gap-2">
-            <InterestButton module="corner" slug={brand.slug} initialCount={counts[brand.slug] ?? 0} initiallyIn={mine.has(brand.slug)} />
+            <PlayButton module="corner" slug={brand.slug} initialCount={counts[brand.slug] ?? 0} initiallyIn={mine.has(brand.slug)} />
             <CopyLinkButton />
           </div>
         </div>
