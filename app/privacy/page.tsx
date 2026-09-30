@@ -32,7 +32,7 @@ export default function PrivacyPage() {
           Instagram links, logo image, the Reward you offer, and your redemption instructions.
         </p>
         <p>
-          <strong>When you pay:</strong> the bid amount, a payment reference, and the payment status. We do{" "}
+          <strong>When you pay:</strong> the listing fee amount, a payment reference, and the payment status. We do{" "}
           <strong>not</strong> receive or store card numbers, CVVs, UPI PINs, or banking credentials — those go
           directly to our payment gateway.
         </p>

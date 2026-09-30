@@ -2,9 +2,13 @@
  * The Razorpay `payment.captured` webhook.
  *
  * This is the path that catches a brand who pays and closes the tab, so the
- * cases that matter are the unhappy ones: a forged delivery, a replay, a
- * capture that arrives while the browser is confirming the same payment, and
- * a late capture of a bid the brand has already bettered.
+ * cases that matter are the unhappy ones: a forged delivery, a replay, and a
+ * capture that arrives while the browser is confirming the same payment.
+ *
+ * The listing fee is flat and paid once, so unlike the old bidding model
+ * there's no "raise your bid" to race against — a brand only ever has one
+ * order in its lifetime, which is why the race scenario below uses a fresh
+ * brand of its own rather than a second order on the setup brand.
  *
  * Local only. Signs with RAZORPAY_WEBHOOK_SECRET from .env.local, which is a
  * throwaway — the real secret lives on production.
@@ -85,7 +89,9 @@ const call = async (path, { method = "GET", body, as } = {}) => {
 
 console.log(`\n=== payment.captured webhook — ${BASE}\n`);
 
-// A merchant with a listing, ready to bid.
+const FEE = 99_900; // the flat listing fee, LISTING_FEE_PAISE in lib/rules.ts
+
+// A merchant with a listing, ready to pay.
 const email = `t3-brand-${stamp}@brandgenie.test`;
 emails.push(email);
 signIn("brand", email, "merchant");
@@ -102,8 +108,8 @@ ok("setup: the brand is listed and off the board", q(`select bid_paise from bran
 // ------------------------------------------------------- rejected deliveries
 console.log("-- deliveries we must not act on");
 
-let order = (await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 90000 } })).data;
-const ev = capturedEvent(order.orderId, "pay_test_1", 90000);
+const order = (await call("/api/bids/create-order", { method: "POST", as: "brand" })).data;
+const ev = capturedEvent(order.orderId, "pay_test_1", FEE);
 
 let res = await fetch(`${BASE}/api/bids/webhook`, {
   method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(ev),
@@ -118,20 +124,20 @@ ok("webhook: a body edited after signing is refused", res.status === 401, `statu
 
 ok("webhook: none of those moved the board",
   q(`select bid_paise from brands where id = '${brandId}'`) === "0");
-ok("webhook: and the bid is still unpaid",
+ok("webhook: and the payment is still unconfirmed",
   q(`select status from bids where razorpay_order_id = '${order.orderId}'`) === "created");
 
 // A correctly signed capture for the wrong amount.
 res = await deliver(capturedEvent(order.orderId, "pay_test_wrong", 100));
 ok("webhook: a capture for the wrong amount is not confirmed", res.data.ignored === "amount-mismatch", JSON.stringify(res.data));
-ok("webhook: which left the bid unpaid",
+ok("webhook: which left the payment unconfirmed",
   q(`select status from bids where razorpay_order_id = '${order.orderId}'`) === "created");
 
 // Events we don't subscribe to, and orders that aren't ours.
 res = await deliver({ ...ev, event: "payment.failed" });
 ok("webhook: an event we don't handle is acknowledged, not retried",
   res.status === 200 && res.data.ignored === "payment.failed");
-res = await deliver(capturedEvent("order_from_another_account", "pay_x", 90000));
+res = await deliver(capturedEvent("order_from_another_account", "pay_x", FEE));
 ok("webhook: an unknown order is acknowledged, not retried",
   res.status === 200 && res.data.ignored === "unknown-order");
 
@@ -140,10 +146,10 @@ console.log("\n-- a brand who paid and closed the tab");
 
 res = await deliver(ev);
 ok("webhook: a genuine capture is accepted", res.status === 200 && res.data.ok === true, JSON.stringify(res.data));
-ok("webhook: the bid is marked paid with its payment id",
+ok("webhook: the payment is marked paid with its payment id",
   q(`select status || '/' || razorpay_payment_id from bids where razorpay_order_id = '${order.orderId}'`) === "paid/pay_test_1");
-ok("webhook: and the board moved without the browser ever coming back",
-  q(`select bid_paise from brands where id = '${brandId}'`) === "90000");
+ok("webhook: and the brand went live without the browser ever coming back",
+  q(`select bid_paise from brands where id = '${brandId}'`) === String(FEE));
 
 const board = await fetch(`${BASE}/`).then((r) => r.text());
 ok("webhook: the brand is on the board page", board.includes(`Webhookwallah ${stamp}`));
@@ -152,40 +158,44 @@ ok("webhook: the brand is on the board page", board.includes(`Webhookwallah ${st
 res = await deliver(ev);
 ok("webhook: a repeat delivery is a no-op", res.status === 200 && res.data.alreadyPaid === true);
 ok("webhook: the repeat changed nothing",
-  q(`select bid_paise from brands where id = '${brandId}'`) === "90000" &&
+  q(`select bid_paise from brands where id = '${brandId}'`) === String(FEE) &&
   q(`select count(*) from bids where razorpay_order_id = '${order.orderId}' and status = 'paid'`) === "1");
 
-// ------------------------------------------------------- the race
-console.log("\n-- webhook and browser arriving together");
+// A brand pays exactly once — create-order refuses a second order once listed.
+const secondOrder = await call("/api/bids/create-order", { method: "POST", as: "brand" });
+ok("webhook: an already-listed brand can't open a second order",
+  secondOrder.status === 400, secondOrder.data.error);
 
-order = (await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 150000 } })).data;
+// ------------------------------------------------------- the race
+// Needs a brand of its own: the flat fee is paid once, so there's no such
+// thing as a second order on an already-listed brand to race against.
+console.log("\n-- webhook and browser arriving together, on a fresh brand");
+
+const raceEmail = `t3-race-${stamp}@brandgenie.test`;
+emails.push(raceEmail);
+signIn("racer", raceEmail, "merchant");
+await call("/api/brand", {
+  method: "POST", as: "racer",
+  body: {
+    name: `Racewallah ${stamp}`, category: "E-Commerce", tagline: "Two confirmations, one payment",
+    rewardLabel: "₹50 off", redemptionType: "counter", totalStock: 10, validDays: 14,
+  },
+});
+const raceBrandId = q(`select id from brands where name = 'Racewallah ${stamp}'`);
+const raceOrder = (await call("/api/bids/create-order", { method: "POST", as: "racer" })).data;
+
 const [w, v] = await Promise.all([
-  deliver(capturedEvent(order.orderId, "pay_test_race", 150000)),
-  call("/api/bids/verify", { method: "POST", as: "brand", body: { bidId: order.bidId, orderId: order.orderId, paymentId: "pay_test_race", signature: "sig" } }),
+  deliver(capturedEvent(raceOrder.orderId, "pay_test_race", FEE)),
+  call("/api/bids/verify", { method: "POST", as: "racer", body: { bidId: raceOrder.bidId, orderId: raceOrder.orderId, paymentId: "pay_test_race", signature: "sig" } }),
 ]);
 ok("race: both callers succeed", w.status === 200 && v.status === 200, `webhook=${w.status} browser=${v.status}`);
 ok("race: exactly one of them claimed the transition",
   [w.data.alreadyPaid, v.data.alreadyPaid].filter(Boolean).length === 1,
   `webhook alreadyPaid=${w.data.alreadyPaid} browser alreadyPaid=${v.data.alreadyPaid}`);
-ok("race: the bid is paid exactly once",
-  q(`select count(*) from bids where razorpay_order_id = '${order.orderId}' and status = 'paid'`) === "1");
-ok("race: the board carries the new bid", q(`select bid_paise from brands where id = '${brandId}'`) === "150000");
-
-// ------------------------------------------------------- out-of-order capture
-console.log("\n-- a late capture of a bid already bettered");
-
-// Open a bid, better it and pay that, then let the older capture land late.
-const stale = (await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 160000 } })).data;
-const newer = (await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 200000 } })).data;
-await deliver(capturedEvent(newer.orderId, "pay_newer", 200000));
-ok("late: the newer bid is live", q(`select bid_paise from brands where id = '${brandId}'`) === "200000");
-
-res = await deliver(capturedEvent(stale.orderId, "pay_stale", 160000));
-ok("late: the older capture is still recorded as paid",
-  res.status === 200 && q(`select status from bids where razorpay_order_id = '${stale.orderId}'`) === "paid");
-ok("late: but it does not drag the brand back down the board",
-  q(`select bid_paise from brands where id = '${brandId}'`) === "200000",
-  q(`select bid_paise from brands where id = '${brandId}'`));
+ok("race: the payment is marked paid exactly once",
+  q(`select count(*) from bids where razorpay_order_id = '${raceOrder.orderId}' and status = 'paid'`) === "1");
+ok("race: the brand is listed at the flat fee",
+  q(`select bid_paise from brands where id = '${raceBrandId}'`) === String(FEE));
 
 console.log(`\n=== ${pass} passed, ${fail} failed\n`);
 process.exitCode = fail ? 1 : 0;

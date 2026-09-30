@@ -114,10 +114,10 @@ const seedBrand = await call("/api/brand", {
   },
 });
 ok("board: a brand lists itself", seedBrand.status === 200 && !!seedBrand.data.brandId);
-const seedOrder = await call("/api/bids/create-order", { method: "POST", as: "seeder", body: { amountPaise: 120000 } });
+const seedOrder = await call("/api/bids/create-order", { method: "POST", as: "seeder" });
 await call("/api/bids/verify", { method: "POST", as: "seeder", body: { bidId: seedOrder.data.bidId, orderId: seedOrder.data.orderId } });
 const boardNow = await (await fetch(BASE + "/")).text();
-ok("board: and appears on it once the bid lands", boardNow.includes(`Board Seed ${stamp}`));
+ok("board: and appears on it once the listing fee lands", boardNow.includes(`Board Seed ${stamp}`));
 
 // ---------------------------------------------------------------- play
 console.log("\n-- the round");
@@ -145,7 +145,7 @@ ok("stop: signed out gets a preview plan", anonStop.status === 200 && anonStop.d
 // what a signed-out visitor can see without an account
 const publicBrand = await (await fetch(BASE + "/brand")).text();
 ok("public: the brand page states the price without a login",
-  /Costs from/.test(publicBrand) && /Places taken/.test(publicBrand) && !/Sign in with email/.test(publicBrand));
+  /Listing fee/.test(publicBrand) && /Places taken/.test(publicBrand) && !/Sign in with email/.test(publicBrand));
 const publicWish = await (await fetch(BASE + "/wish")).text();
 ok("public: the wish page shows the countdown and the feed",
   /window opens in|11:11/.test(publicWish) && /What people are wishing for/.test(publicWish));
@@ -272,8 +272,8 @@ ok(`wishes: gate is ${windowOpen ? "open" : "closed"} and behaves`, windowOpen ?
 const wBad = await call("/api/wishes", { method: "POST", body: { text: "x", category: "Nope" }, as: "winner" });
 ok("wishes: rejects junk input", wBad.status >= 400);
 
-// ---------------------------------------------------------------- brand + bid
-console.log("\n-- brand listing & bidding");
+// ---------------------------------------------------------- brand + listing
+console.log("\n-- brand listing & the flat fee");
 const b1 = await call("/api/brand", {
   method: "POST",
   as: "brand",
@@ -285,29 +285,20 @@ const b1 = await call("/api/brand", {
 });
 ok("brand: listing saves", b1.status === 200 && !!b1.data.brandId);
 
-const low = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 40000 }, as: "brand" });
-ok("bid: ₹400 is under the ₹500 floor and is refused", low.status === 400, low.data.error);
-const odd = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 50050 }, as: "brand" });
-ok("bid: an off-step amount is refused", odd.status === 400, odd.data.error);
-const floor = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 50000 }, as: "brand" });
-ok("bid: exactly ₹500 is accepted", floor.status === 200 && !!floor.data.orderId,
-  floor.status === 200 ? (floor.data.mock ? "test mode" : "live razorpay") : floor.data.error);
+const order = await call("/api/bids/create-order", { method: "POST", as: "brand" });
+ok("listing: an order opens for the flat fee, no amount sent", order.status === 200 && !!order.data.orderId,
+  order.status === 200 ? (order.data.mock ? "test mode" : "live razorpay") : order.data.error);
 
-const v1 = await call("/api/bids/verify", { method: "POST", body: { bidId: floor.data.bidId, orderId: floor.data.orderId }, as: "brand" });
-ok("bid: payment verifies and the bid goes live", v1.status === 200, `₹${(v1.data.amountPaise ?? 0) / 100}`);
-const vReplay = await call("/api/bids/verify", { method: "POST", body: { bidId: floor.data.bidId, orderId: floor.data.orderId }, as: "brand" });
-ok("bid: re-verifying the same bid is idempotent", vReplay.status === 200 && vReplay.data.alreadyPaid === true);
-const forged = await call("/api/bids/verify", { method: "POST", body: { bidId: floor.data.bidId, orderId: "order_forged" }, as: "brand" });
-ok("bid: a mismatched order id is rejected", forged.status === 400, forged.data.error);
+const v1 = await call("/api/bids/verify", { method: "POST", body: { bidId: order.data.bidId, orderId: order.data.orderId }, as: "brand" });
+ok("listing: payment verifies and the brand goes live", v1.status === 200, `₹${(v1.data.amountPaise ?? 0) / 100}`);
+const vReplay = await call("/api/bids/verify", { method: "POST", body: { bidId: order.data.bidId, orderId: order.data.orderId }, as: "brand" });
+ok("listing: re-verifying the same payment is idempotent", vReplay.status === 200 && vReplay.data.alreadyPaid === true);
+const forged = await call("/api/bids/verify", { method: "POST", body: { bidId: order.data.bidId, orderId: "order_forged" }, as: "brand" });
+ok("listing: a mismatched order id is rejected", forged.status === 400, forged.data.error);
 
-const under = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 50000 }, as: "brand" });
-ok("bid: a new bid must beat the current one", under.status === 400, under.data.error);
-const raise = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 60000 }, as: "brand" });
-ok("bid: raising to ₹600 is accepted", raise.status === 200);
-await call("/api/bids/verify", { method: "POST", body: { bidId: raise.data.bidId, orderId: raise.data.orderId }, as: "brand" });
+const again = await call("/api/bids/create-order", { method: "POST", as: "brand" });
+ok("listing: an already-listed brand can't order a second time", again.status === 400, again.data.error);
 
-const boardHtml = await call("/");
-ok("board: the new brand appears on the live board", boardHtml.data.raw === undefined || true);
 const page = await (await fetch(BASE + "/")).text();
 ok("board: brand is rendered on the board", page.includes(`Test Brand ${stamp}`));
 
@@ -338,14 +329,15 @@ ok("online: batch uploads and de-duplicates", batch.status === 200 && batch.data
 const counterBrandCodes = await call("/api/brand/coupons", { method: "POST", as: "brand", body: { codes: "NOPE-1" } });
 ok("online: a counter reward can't take codes", counterBrandCodes.status === 400, counterBrandCodes.data.error);
 
-// take position #1 so the genie can only land here
-const o1 = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 90_000_00 }, as: "shop" });
+// Get this brand listed — it costs nothing to be #1 or #50 here, since the
+// genie's landing is forced below regardless of position.
+const o1 = await call("/api/bids/create-order", { method: "POST", as: "shop" });
 await call("/api/bids/verify", { method: "POST", body: { bidId: o1.data.bidId, orderId: o1.data.orderId }, as: "shop" });
 
 // The genie's landing is pseudo-random, so to test the online path reliably
 // we make THIS brand the only one with anything left — he walks past empty
-// shelves, so he has to stop here. Local only: it rewrites every reward's
-// stock, which is not something to do to a live board.
+// shelves regardless of position, so he has to stop here. Local only: it
+// rewrites every reward's stock, which is not something to do to a live board.
 //
 // The backup table is a real one, not TEMP: each psql call is its own
 // session and a temp table wouldn't survive to the restore.

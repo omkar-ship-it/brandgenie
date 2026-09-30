@@ -7,7 +7,7 @@ export type ConfirmOutcome =
   | { ok: false; reason: "no-db" | "unknown-order" | "amount-mismatch" };
 
 /**
- * Mark a bid paid and move the brand to the position it bought.
+ * Mark a bid paid and list the brand on the board.
  *
  * There are two ways a payment reaches us — the browser coming back from
  * checkout, and Razorpay's `payment.captured` webhook — and they race: a
@@ -17,7 +17,7 @@ export type ConfirmOutcome =
  *
  * The transition is claimed with a conditional update rather than a
  * read-then-write. Whichever caller flips `created` to `paid` owns it and
- * moves the board; the loser gets `alreadyPaid` and does nothing, so a
+ * lists the brand; the loser gets `alreadyPaid` and does nothing, so a
  * duplicate delivery (Razorpay retries until it sees a 2xx) can't double
  * anything.
  */
@@ -50,10 +50,10 @@ export async function confirmBid(opts: {
   // Someone else got there first — the board is already correct.
   if (claimed.length === 0) return { ok: true, alreadyPaid: true, amountPaise: bid.amountPaise };
 
-  // Only ever upward. Captures can arrive out of order — a brand can raise
-  // their bid while an earlier, smaller one is still unconfirmed — and a late
-  // capture of the smaller bid must not drag them back down the board. They
-  // paid for both; they keep the better one.
+  // The amount is now always the flat listing fee, so there's no "raising a
+  // bid" to race against — but the guard stays: it's what stops a bid row
+  // that somehow got this far for an already-listed brand from touching
+  // `bidAt` and quietly resetting their tie-break position.
   await db
     .update(brands)
     .set({ bidPaise: bid.amountPaise, bidAt: now })

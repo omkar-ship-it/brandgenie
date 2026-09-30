@@ -1,6 +1,6 @@
 "use client";
 
-import { CATEGORY_ACCENT, rupees } from "@/lib/rules";
+import { CATEGORY_ACCENT } from "@/lib/rules";
 
 function initials(name: string) {
   const words = name.split(/\s+/).filter((w) => /[a-z]/i.test(w));
@@ -27,7 +27,7 @@ export function TilePreview({
   rewardIcon,
   logoUrl,
   remaining,
-  bidPaise,
+  voteCount,
   position,
   clicks,
 }: {
@@ -37,7 +37,7 @@ export function TilePreview({
   rewardIcon: string;
   logoUrl: string | null;
   remaining: number;
-  bidPaise: number;
+  voteCount: number;
   position: number | null;
   clicks: number;
 }) {
@@ -84,7 +84,7 @@ export function TilePreview({
           {out && <span className="tile-out">SOLD OUT</span>}
           <span className="tile-stats">
             <span className="tile-bid" style={{ color: accent }}>
-              {rupees(bidPaise)}
+              {voteCount} {voteCount === 1 ? "vote" : "votes"}
             </span>
             <span className="tile-clicks">{clicks} clicks</span>
           </span>
@@ -94,7 +94,7 @@ export function TilePreview({
       <p className="mt-3 text-[11.5px] text-ink-soft">
         {position
           ? `Sitting at #${position} right now.`
-          : "You'll appear on the board as soon as your first bid goes through."}
+          : "You'll appear on the board as soon as your listing fee is paid."}
       </p>
     </div>
   );

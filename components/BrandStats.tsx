@@ -5,8 +5,8 @@ const fmtDay = (day: string) =>
 
 /**
  * A brand's day at a glance. Three numbers for today, then a week of bars
- * so a brand can see whether a bid changed anything — which is the only
- * evidence that a position is worth paying for.
+ * so a brand can see whether a vote push changed anything — which is the
+ * only evidence that a position is worth climbing toward.
  */
 export function BrandStatsPanel({ stats }: { stats: BrandStats }) {
   const peak = Math.max(1, ...stats.days.map((d) => Math.max(d.clicks, d.won, d.redeemed)));

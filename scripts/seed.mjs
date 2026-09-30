@@ -22,10 +22,17 @@
  * `.example` TLD. Real social proof is the first real logo on the real
  * board; this is a furnished room and should read as one.
  *
+ * Every brand pays the same flat listing fee (`LISTING_FEE_PAISE`) — there's
+ * no bidding any more, so nothing here varies the amount. What still varies,
+ * and gives the board its shape, is customer votes: a pool of throwaway
+ * voter accounts casts a geometric spread of votes per brand further down
+ * this file, the same way a bid ladder once priced them.
+ *
  *   npm run db:seed          # add missing brands
- *   npm run db:seed -- wipe  # clear demo brands first
+ *   npm run db:seed -- wipe  # clear demo brands, voters and their votes
  */
 import { Client } from "pg";
+import { LISTING_FEE_PAISE } from "../lib/rules.ts";
 
 const BRANDS = [
   // ---------------------------------------------- Aspirational Brands (6)
@@ -132,26 +139,6 @@ if (process.argv.includes("wipe")) {
 }
 
 /**
- * The showcase bid ladder.
- *
- * #1 anchors at ₹70,000 and the tail lands just above the ₹500 floor,
- * decaying geometrically the way a contested auction board actually does —
- * a steep, expensive top and a long cheap tail — rather than in even steps,
- * which reads as a price list someone typed out.
- *
- * The point of the spread is what it tells a brand reading the board: entry
- * is cheap, but the top is worth many times the floor. The per-row number in
- * BRANDS is only the intended *order*; the amount shown comes from here, so
- * re-pricing the board is one constant rather than fifty edits.
- *
- * Rounded to the ₹100 step so every figure is one a brand could really bid.
- */
-const TOP_RUPEES = 70_000;
-const TAIL_RUPEES = 900;
-const ladderRupees = (i, n) =>
-  Math.round((TOP_RUPEES * (TAIL_RUPEES / TOP_RUPEES) ** (i / (n - 1))) / 100) * 100;
-
-/**
  * Deal the shelves out round-robin instead of in blocks.
  *
  * The list above is grouped by category because that's the only way to edit
@@ -178,7 +165,6 @@ function interleave(rows) {
 let added = 0;
 const ORDERED = interleave(BRANDS);
 for (const [i, [name, category, tagline, area, reward, icon, redemption]] of ORDERED.entries()) {
-  const rupees = ladderRupees(i, ORDERED.length);
   const email = `demo+${i + 1}@brandgenie.test`;
   const slug = name.toLowerCase().replace(/[^a-z]+/g, "");
 
@@ -193,7 +179,9 @@ for (const [i, [name, category, tagline, area, reward, icon, redemption]] of ORD
   const { rows: existing } = await client.query(`select id from brands where user_id = $1`, [userId]);
   if (existing.length) continue;
 
-  // Bids get staggered timestamps so the tie-break ordering is deterministic.
+  // Listing timestamps are staggered so the tie-break ordering (equal votes,
+  // earliest listing wins) is deterministic rather than depending on insert
+  // order. Every brand pays the same flat fee — there's nothing left to vary.
   const bidAt = new Date(Date.now() - (ORDERED.length - i) * 60_000);
   const { rows: brandRows } = await client.query(
     `insert into brands (user_id, name, tagline, category, area, website, instagram, bid_paise, bid_at, is_demo)
@@ -206,7 +194,7 @@ for (const [i, [name, category, tagline, area, reward, icon, redemption]] of ORD
       area,
       `https://${slug}.example`,
       `https://instagram.com/${slug}`,
-      rupees * 100,
+      LISTING_FEE_PAISE,
       bidAt,
     ]
   );
@@ -242,37 +230,82 @@ for (const [i, [name, category, tagline, area, reward, icon, redemption]] of ORD
   await client.query(
     `insert into bids (brand_id, amount_paise, status, razorpay_order_id, razorpay_payment_id, paid_at)
      values ($1,$2,'paid',$3,$4,$5)`,
-    [brandRows[0].id, rupees * 100, `seed_order_${i}`, `seed_pay_${i}`, bidAt]
+    [brandRows[0].id, LISTING_FEE_PAISE, `seed_order_${i}`, `seed_pay_${i}`, bidAt]
   );
 
   added++;
 }
 
 /**
- * Re-price an already-seeded board.
+ * Normalise an already-seeded board onto the flat fee.
  *
- * The loop above skips brands that exist, so editing the ladder would
- * otherwise only ever show up on a fresh database — and the live showcase
- * would quietly keep last month's prices. The seeded payment rows are moved
- * with it so the ledger doesn't contradict the board.
+ * Brands seeded before the flat-fee model still carry whatever a bidding
+ * ladder once priced them at. The loop above skips brands that already
+ * exist, so without this a re-seed would silently keep serving stale
+ * amounts forever. The seeded payment rows move with it so the ledger
+ * doesn't contradict the listing.
  */
-let repriced = 0;
-for (const [i, [name]] of ORDERED.entries()) {
-  const paise = ladderRupees(i, ORDERED.length) * 100;
-  const { rowCount } = await client.query(
-    `update brands set bid_paise = $2 where is_demo = true and name = $1 and bid_paise <> $2`,
-    [name, paise]
-  );
-  if (!rowCount) continue;
+const { rowCount: normalised } = await client.query(
+  `update brands set bid_paise = $1 where is_demo = true and bid_paise <> $1`,
+  [LISTING_FEE_PAISE]
+);
+if (normalised) {
   await client.query(
-    `update bids set amount_paise = $2
-      from brands b where bids.brand_id = b.id and b.is_demo = true and b.name = $1`,
-    [name, paise]
+    `update bids set amount_paise = $1
+       from brands b where bids.brand_id = b.id and b.is_demo = true and bids.amount_paise <> $1`,
+    [LISTING_FEE_PAISE]
   );
-  repriced += rowCount;
+  console.log(`normalised ${normalised} showcase listings onto the flat fee`);
 }
-if (repriced) {
-  console.log(`re-priced ${repriced} showcase bids — #1 ₹${TOP_RUPEES.toLocaleString("en-IN")}, #${ORDERED.length} ₹${TAIL_RUPEES}`);
+
+/**
+ * The showcase vote spread.
+ *
+ * Position used to come from a bidding ladder; now it comes from customer
+ * votes, so the showcase board needs a realistic *vote* ladder instead — a
+ * popular brand near the top, a long tail of newer or less-supported ones,
+ * decaying geometrically rather than in even steps (which would read as a
+ * spreadsheet, not a crowd).
+ *
+ * A pool of throwaway voter accounts casts the votes. The pool only needs to
+ * be as large as the single biggest target, because a voter can appear under
+ * many different brands — a customer upvoting several brands is exactly the
+ * real model — they just can't vote the same brand twice, which is the one
+ * thing the pool has to respect.
+ *
+ * This only ever adds votes, never removes them: lowering these constants
+ * and re-seeding won't claw back votes already cast, because the seed can't
+ * tell a synthetic vote from a real visitor's real upvote on a showcase
+ * brand. `npm run db:seed -- wipe` is the way to reset the board from
+ * scratch — it deletes the brands, which cascades to their votes.
+ */
+const TOP_VOTES = 240;
+const TAIL_VOTES = 3;
+const voteLadder = (i, n) => Math.max(1, Math.round(TOP_VOTES * (TAIL_VOTES / TOP_VOTES) ** (i / (n - 1))));
+
+const voterIds = [];
+for (let v = 0; v < TOP_VOTES; v++) {
+  const { rows } = await client.query(
+    `insert into users (email, role) values ($1, 'customer')
+     on conflict (email) do update set email = excluded.email returning id`,
+    [`demo+voter+${v + 1}@brandgenie.test`]
+  );
+  voterIds.push(rows[0].id);
+}
+
+let votesCast = 0;
+for (const [i, [name]] of ORDERED.entries()) {
+  const target = voteLadder(i, ORDERED.length);
+  const { rows: brandRows } = await client.query(`select id from brands where is_demo = true and name = $1`, [name]);
+  if (!brandRows.length) continue;
+  const { rowCount } = await client.query(
+    `insert into votes (voter_id, brand_id) select unnest($1::uuid[]), $2 on conflict do nothing`,
+    [voterIds.slice(0, target), brandRows[0].id]
+  );
+  votesCast += rowCount;
+}
+if (votesCast) {
+  console.log(`cast ${votesCast} showcase votes — top brand ~${TOP_VOTES}, tail brand ~${TAIL_VOTES}`);
 }
 
 /**

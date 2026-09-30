@@ -9,7 +9,7 @@ import type { RoundMode } from "@/lib/round";
 /** The example board: showcase brands, and rounds that award nothing. */
 export async function loadTry(mode: RoundMode) {
   const user = await getSessionUser();
-  const board = await getBoard(true);
+  const board = await getBoard(true, user?.id);
 
   let playedToday = false;
   if (user && hasDb && db) {

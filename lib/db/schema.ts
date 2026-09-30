@@ -40,8 +40,10 @@ export const sessions = pgTable("sessions", {
 // ---------------------------------------------------------------- brands
 
 /**
- * One brand per account. `bidPaise` is the live bid that ranks the board —
- * it only ever moves after a payment is verified, never from the client.
+ * One brand per account. `bidPaise` is set once, to the flat listing fee,
+ * after a payment is verified — never from the client, and never a second
+ * time: paying doesn't move you up the board any more, so there's nothing
+ * to re-pay for. Position is now decided by the `votes` table below.
  */
 export const brands = pgTable("brands", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -66,10 +68,12 @@ export const brands = pgTable("brands", {
    * actually play, which is the opposite of what a demo should do.
    */
   isDemo: boolean("is_demo").notNull().default(false),
-  // How many people have opened this brand's card from the board. The
-  // engagement number a brand is buying a position for.
+  // How many people have opened this brand's card from the board — a
+  // secondary engagement number, separate from the votes that rank it.
   clicks: integer("clicks").notNull().default(0),
-  // Breaks ties between equal bids — whoever got there first keeps the rank.
+  // When the listing fee was paid. Breaks ties between brands tied on votes
+  // — whoever joined first keeps the higher rank until someone earns past
+  // them, rather than a coin flip re-deciding it on every page load.
   bidAt: timestamp("bid_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -107,7 +111,13 @@ export const rewards = pgTable("rewards", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** Payment ledger. A bid is only live once its row reaches status "paid". */
+/**
+ * The listing-fee payment ledger. Named `bids` from when the amount was
+ * negotiable; kept rather than renamed to avoid a destructive migration on a
+ * live table. `amountPaise` is now always the flat fee (`LISTING_FEE_PAISE`
+ * in lib/rules.ts) — every row is the same number — and a brand only ever
+ * has one row reach status "paid", since a listed brand can't pay again.
+ */
 export const bids = pgTable("bids", {
   id: uuid("id").defaultRandom().primaryKey(),
   brandId: uuid("brand_id")
@@ -120,6 +130,30 @@ export const bids = pgTable("bids", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   paidAt: timestamp("paid_at", { withTimezone: true }),
 });
+
+/**
+ * One customer's upvote for one brand — what now moves a brand up and down
+ * the board, in place of paying more.
+ *
+ * The unique index is the whole mechanism: it's what makes "one vote per
+ * brand" actually true rather than something the API merely promises. A
+ * customer can hold as many rows here as there are brands they like; they
+ * just can't hold two for the same brand.
+ */
+export const votes = pgTable(
+  "votes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    voterId: uuid("voter_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    brandId: uuid("brand_id")
+      .notNull()
+      .references(() => brands.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("votes_voter_brand_idx").on(t.voterId, t.brandId)]
+);
 
 /**
  * A brand's own single-use discount codes, uploaded in a batch. One is

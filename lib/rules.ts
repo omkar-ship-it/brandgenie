@@ -10,8 +10,12 @@ export const BOARD_SIZE = 50;
 export function visibleSlots(claimed: number) {
   return Math.min(BOARD_SIZE, Math.max(claimed + 9, 10));
 }
-export const BID_BASE_PAISE = 50_000; // ₹500 — the floor to get on the board
-export const BID_STEP_PAISE = 10_000; // ₹100 — the increment above it
+/**
+ * The one-time fee to be listed on the board — flat, non-negotiable, and the
+ * same for every brand. Paying it makes a brand eligible; it no longer buys
+ * position. Position is earned afterwards, in customer votes.
+ */
+export const LISTING_FEE_PAISE = 99_900; // ₹999
 export const WISHES_PER_DAY = 2;
 /** How many brands a player may shortlist in the "pick" experiment. */
 export const PICK_LIMIT = 5;
@@ -57,7 +61,7 @@ export const CATEGORY_ICON: Record<string, string> = {
 /**
  * One hue per shelf, used for the tile rule and the reward card. Kept at a
  * similar weight so no category looks louder than another on the board —
- * position is what a brand pays for, and colour shouldn't quietly outrank it.
+ * position is earned in customer votes, and colour shouldn't quietly outrank it.
  */
 export const CATEGORY_ACCENT: Record<string, string> = {
   Lifestyle: "#0f8b6c",

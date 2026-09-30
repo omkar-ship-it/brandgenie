@@ -5,9 +5,21 @@ import { bids } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getBrandForUser } from "@/lib/board";
 import { createOrder, razorpayConfigured, razorpayKeyId } from "@/lib/razorpay";
-import { BID_BASE_PAISE, BID_STEP_PAISE } from "@/lib/rules";
+import { LISTING_FEE_PAISE } from "@/lib/rules";
 
-export async function POST(req: Request) {
+/**
+ * Open an order for the listing fee.
+ *
+ * There's nothing to negotiate any more: the fee is flat and the same for
+ * every brand, so unlike the old bidding flow this reads no amount from the
+ * client at all — there's no number left for a tampered request to lie
+ * about. The only thing this route decides is whether the brand is allowed
+ * to pay right now.
+ *
+ * A brand pays exactly once. Position afterwards is earned in customer
+ * votes, not bought again, so an already-listed brand has nothing to order.
+ */
+export async function POST() {
   if (!hasDb || !db) return NextResponse.json({ error: "Not available right now." }, { status: 503 });
 
   const user = await getSessionUser();
@@ -16,15 +28,11 @@ export async function POST(req: Request) {
   const owned = await getBrandForUser(user.id);
   if (!owned) return NextResponse.json({ error: "Set up your brand first." }, { status: 400 });
   if (!owned.reward) return NextResponse.json({ error: "Add a reward first." }, { status: 400 });
+  if (owned.brand.bidPaise > 0) {
+    return NextResponse.json({ error: "You're already listed on the Board." }, { status: 400 });
+  }
 
-  const body = await req.json().catch(() => null);
-  const amountPaise = Math.round(Number(body?.amountPaise));
-  if (!Number.isFinite(amountPaise) || amountPaise < BID_BASE_PAISE || amountPaise % BID_STEP_PAISE !== 0) {
-    return NextResponse.json({ error: "That bid amount isn't valid." }, { status: 400 });
-  }
-  if (amountPaise <= owned.brand.bidPaise) {
-    return NextResponse.json({ error: "Your new bid has to beat your current one." }, { status: 400 });
-  }
+  const amountPaise = LISTING_FEE_PAISE;
 
   const [bid] = await db
     .insert(bids)

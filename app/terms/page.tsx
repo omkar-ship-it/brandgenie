@@ -1,6 +1,6 @@
 import { Clause, Important, LegalPage } from "@/components/legal";
 import { COMPANY } from "@/lib/company";
-import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, rupees } from "@/lib/rules";
+import { BOARD_SIZE, LISTING_FEE_PAISE, rupees } from "@/lib/rules";
 
 export const metadata = { title: "Terms & Conditions · LoyalGenie" };
 
@@ -22,9 +22,11 @@ export default function TermsPage() {
           {COMPANY.legalName} (&ldquo;we&rdquo;, &ldquo;us&rdquo;).{" "}
           <strong>Brand</strong> or <strong>Merchant</strong> means a business that pays to list on the Board.{" "}
           <strong>Customer</strong> or <strong>Player</strong> means an individual who plays a round.{" "}
-          <strong>Board</strong> means the ranked list of up to {BOARD_SIZE} paid positions.{" "}
+          <strong>Board</strong> means the ranked list of up to {BOARD_SIZE} listed positions.{" "}
           <strong>Reward</strong> means the offer a Brand chooses to make available.{" "}
-          <strong>Bid</strong> means the amount a Brand pays us for a position.
+          <strong>Listing Fee</strong> means the flat, one-time amount a Brand pays us to become eligible for the
+          Board. <strong>Vote</strong> or <strong>Upvote</strong> means a Customer&rsquo;s endorsement of one
+          Brand, which moves that Brand&rsquo;s position on the Board.
         </p>
       </Clause>
 
@@ -63,36 +65,48 @@ export default function TermsPage() {
         </p>
       </Clause>
 
-      <Clause n={5} id="board" title="The Board, bidding and position">
+      <Clause n={5} id="board" title="The Board, the Listing Fee and voting">
         <p>
-          The Board carries up to <strong>{BOARD_SIZE} Brand positions</strong>. Position is determined solely by
-          the amount bid, highest first; where two bids are equal, the earlier bid ranks higher. Bids start at{" "}
-          {rupees(BID_BASE_PAISE)} and move in steps of {rupees(BID_STEP_PAISE)}.
+          A Brand becomes eligible for the Board by paying the Listing Fee: currently a flat{" "}
+          <strong>{rupees(LISTING_FEE_PAISE)}</strong>, the same for every Brand, paid once. The Listing Fee does
+          not buy a position — it buys eligibility. We may change the Listing Fee at any time for new listings; a
+          change does not affect a Brand already listed.
+        </p>
+        <p>
+          Position on the Board is determined solely by Customer votes, highest first; where two Brands are tied
+          on votes, whichever paid the Listing Fee earlier ranks higher. A Customer may cast at most one Vote per
+          Brand; a Vote, once cast, is final and cannot be withdrawn or transferred.
         </p>
         <Important>
           <p>
-            <strong>Positions are not guaranteed and are not permanent.</strong> If another Brand outbids you,
-            you move down, and if you are displaced beyond position {BOARD_SIZE} you leave the Board entirely and
-            your Reward leaves the reward pool. This can happen at any time, without notice, and does not entitle
-            you to any refund, credit, or compensation.
+            <strong>Positions are not guaranteed and are not permanent.</strong> If another Brand earns more votes
+            than you, you move down, and if you are displaced beyond position {BOARD_SIZE} you leave the Board
+            entirely and your Reward leaves the reward pool. This can happen at any time, without notice, as
+            Customers keep voting, and does not entitle you to any refund, credit, or compensation. Earning more
+            votes later may return you to the Board without any further payment.
           </p>
         </Important>
         <p>
-          We may display all Brands that have bid on a given day. Being displayed is not the same as holding a
-          position: only the top {BOARD_SIZE} Brands appear on the Board and are available in the reward pool.
+          We may display all Brands that have paid the Listing Fee on a given day, whatever their vote count. Being
+          displayed is not the same as holding a position: only the top {BOARD_SIZE} Brands by vote count appear on
+          the Board and are available in the reward pool.
         </p>
         <p>
-          A Bid buys a position in the ranking only. It does not buy better odds — the round is identical for
-          every Brand on the Board — and it is not an advertisement booking, an impression guarantee, a
-          click guarantee, or a promise of any commercial outcome.
+          The Listing Fee buys eligibility only. It does not buy votes, better odds, or any particular position —
+          the round is identical for every Brand on the Board — and it is not an advertisement booking, an
+          impression guarantee, a click guarantee, or a promise of any commercial outcome. We do not manufacture,
+          endorse, or guarantee the authenticity of any Vote, and we may remove Votes we reasonably believe are
+          fraudulent, automated, or otherwise manipulated, which may change a Brand&rsquo;s position without
+          entitling anyone to a refund.
         </p>
       </Clause>
 
       <Clause n={6} id="payments" title="Payments">
         <p>
-          Bid amounts are payable to the Platform and are consideration for the listing service. Payments are
-          processed by a third-party payment gateway; we do not receive or store your card, UPI, or banking
-          credentials. A Bid becomes live only once payment is confirmed to us by the gateway.
+          The Listing Fee is payable to the Platform and is consideration for the listing service, not for any
+          particular position or outcome. Payments are processed by a third-party payment gateway; we do not
+          receive or store your card, UPI, or banking credentials. A listing becomes live only once payment is
+          confirmed to us by the gateway.
         </p>
         <p>
           All amounts are in Indian Rupees and are exclusive of applicable taxes unless stated otherwise. You are
@@ -104,8 +118,9 @@ export default function TermsPage() {
         <Important>
           <p>
             <strong>All payments are final. No refunds are issued and there is no cancellation policy.</strong>{" "}
-            This includes, without limitation: being outbid or displaced from the Board; a Reward going unclaimed;
-            fewer Customers playing than you expected; ending your listing early; or dissatisfaction with results.
+            This includes, without limitation: being out-voted or displaced from the Board; a Reward going
+            unclaimed; fewer Customers voting or playing than you expected; ending your listing early; or
+            dissatisfaction with results.
           </p>
         </Important>
         <p>
@@ -156,8 +171,10 @@ export default function TermsPage() {
       <Clause n={10} id="conduct" title="Acceptable use">
         <p>You must not:</p>
         <ul>
-          <li>use bots, scripts, or automation to play rounds, inflate clicks, or manipulate the Board;</li>
-          <li>open multiple accounts to take more than one round per day;</li>
+          <li>use bots, scripts, or automation to play rounds, cast Votes, inflate clicks, or otherwise manipulate the Board;</li>
+          <li>open multiple accounts to take more than one round per day, or to cast more than one Vote for the same Brand;</li>
+          <li>pay, offer, or solicit payment or reward of any kind in exchange for a Vote;</li>
+          <li>vote for a Brand you own, operate, are employed by, or are otherwise materially connected to;</li>
           <li>interfere with, probe, or attempt to bypass any security or rate-limiting measure;</li>
           <li>resell, trade, or commercialise a Reward; or</li>
           <li>use the platform for anything unlawful, fraudulent, or abusive.</li>

@@ -52,7 +52,7 @@ export function StopBoard({
   allowAnonymous?: boolean;
   /** Showcase board: resolves and animates, but awards nothing. */
   demo?: boolean;
-  /** Let the bid buy area on the grid rather than just a rank number. */
+  /** Let votes buy area on the grid rather than just a rank number. */
   showcase?: boolean;
 }) {
   const [state, setState] = useState<State>({ kind: "idle" });
@@ -266,7 +266,9 @@ export function StopBoard({
         )}
       </div>
 
-      {selected && <BrandSheet entry={selected} onClose={closeBrand} />}
+      {selected && (
+        <BrandSheet entry={selected} onClose={closeBrand} signedIn={signedIn} isMerchant={isMerchant} backTo={backTo} />
+      )}
     </>
   );
 }

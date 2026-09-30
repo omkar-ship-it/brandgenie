@@ -2,9 +2,10 @@
  * Focused suite for the flows that aren't covered by flowtest.mjs:
  *
  *   1. brand listing — sign up, list, add a reward, edit it
- *   2. payment      — order, signature check, tamper, replay, board effect
+ *   2. payment      — the flat listing fee: order, signature check, tamper, replay
  *   3. overnight reset — a spent round frees up when the day key rolls
  *   4. claimed-out brands — the genie steps over an empty shelf
+ *   5. voting — one upvote per customer per brand, and what it does to rank
  *
  * Needs PGURL pointed at the LOCAL database — it writes rows and reads the
  * day key back out. Self-cleaning: everything it makes is torn down on exit.
@@ -12,6 +13,7 @@
  *   PGURL=... BASE=http://localhost:3000 node scripts/flowtest2.mjs
  */
 import { execSync } from "child_process";
+import { LISTING_FEE_PAISE } from "../lib/rules.ts";
 
 const BASE = process.env.BASE ?? "http://localhost:3000";
 const PGURL = process.env.PGURL;
@@ -155,21 +157,20 @@ row = q(`select total_stock, remaining from rewards where brand_id = '${brandId}
 ok("listing: raising stock tops up what's left, not resets it", row[0] === "40" && row[1] === "25", `${row[1]}/${row[0]}`);
 
 // =========================================================== 2. PAYMENT
-console.log("\n-- bidding and payment");
+console.log("\n-- the flat listing fee");
 
-r = await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 20000 } });
-ok("payment: a bid under the ₹500 floor is refused", r.status === 400, r.data.error);
-
-r = await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 50500 } });
-ok("payment: a bid off the ₹100 step is refused", r.status === 400, r.data.error);
-
-r = await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 120000 } });
+r = await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 999999999 } });
 const order = r.data;
-ok("payment: a valid bid opens an order", r.status === 200 && Boolean(order.orderId), `order=${order.orderId}`);
+ok("payment: an order opens regardless of any amount the client sends",
+  r.status === 200 && Boolean(order.orderId), `order=${order.orderId}`);
+ok("payment: the server ignores it and always charges the flat fee",
+  order.amountPaise === LISTING_FEE_PAISE, `charged ${order.amountPaise}`);
 ok("payment: local runs in labelled test mode, no live key", order.mock === true && order.keyId === null);
 
 let pending = q(`select status, amount_paise from bids where id = '${order.bidId}'`).split("|");
-ok("payment: the bid is unpaid until money lands", pending[0] === "created", pending[0]);
+ok("payment: the fee is unpaid until money lands", pending[0] === "created", pending[0]);
+ok("payment: and its amount is the flat fee, not whatever was sent",
+  pending[1] === String(LISTING_FEE_PAISE), pending[1]);
 ok("payment: the board still doesn't show it", q(`select bid_paise from brands where id = '${brandId}'`) === "0");
 
 // Wrong order id must fail before anything else answers.
@@ -197,9 +198,9 @@ r = await call("/api/bids/verify", {
 ok("payment: a verified payment is accepted", r.status === 200 && r.data.ok === true, `status=${r.status}`);
 
 pending = q(`select status, razorpay_payment_id from bids where id = '${order.bidId}'`).split("|");
-ok("payment: the bid is marked paid with its payment id", pending[0] === "paid" && pending[1] === "test_pay_1");
-ok("payment: and only now does the board carry the bid",
-  q(`select bid_paise from brands where id = '${brandId}'`) === "120000");
+ok("payment: the fee is marked paid with its payment id", pending[0] === "paid" && pending[1] === "test_pay_1");
+ok("payment: and only now does the board carry the listing",
+  q(`select bid_paise from brands where id = '${brandId}'`) === String(LISTING_FEE_PAISE));
 
 const boardAfter = await call("/");
 ok("payment: the brand is on the board page", boardAfter.text.includes(`Testwallah ${stamp}`));
@@ -211,10 +212,10 @@ r = await call("/api/bids/verify", {
 });
 ok("payment: replaying the same confirmation is a no-op, not a second charge",
   r.status === 200 && r.data.alreadyPaid === true);
-ok("payment: the bid amount did not move on replay",
-  q(`select bid_paise from brands where id = '${brandId}'`) === "120000");
+ok("payment: the listing did not move on replay",
+  q(`select bid_paise from brands where id = '${brandId}'`) === String(LISTING_FEE_PAISE));
 
-// Someone else's bid.
+// Someone else's payment.
 const oEmail = `t2-other-${stamp}@brandgenie.test`;
 madeEmails.push(oEmail);
 signIn("other", oEmail, "merchant");
@@ -222,14 +223,15 @@ r = await call("/api/bids/verify", {
   method: "POST", as: "other",
   body: { bidId: order.bidId, orderId: order.orderId, signature: "sig" },
 });
-ok("payment: another merchant can't confirm this bid", r.status !== 200, `status=${r.status}`);
+ok("payment: another merchant can't confirm this payment", r.status !== 200, `status=${r.status}`);
 
-// A lower re-bid can't be used to move down.
-r = await call("/api/bids/create-order", { method: "POST", as: "brand", body: { amountPaise: 100000 } });
-ok("payment: a re-bid below the current one is refused", r.status === 400, r.data.error);
+// The fee is paid once. There's no "raise your bid" any more — position is
+// earned in votes, not bought again — so a second order is simply refused.
+r = await call("/api/bids/create-order", { method: "POST", as: "brand" });
+ok("payment: an already-listed brand can't open a second order", r.status === 400, r.data.error);
 
 // Signed out.
-r = await call("/api/bids/create-order", { method: "POST", body: { amountPaise: 120000 } });
+r = await call("/api/bids/create-order", { method: "POST" });
 ok("payment: a signed-out visitor can't open an order", r.status === 401);
 
 // ====================================================== 3. OVERNIGHT RESET
@@ -288,8 +290,11 @@ const demo = q(`select b.name, b.id, r.id, r.remaining
 ok("claimed-out: the showcase board has some brands that ran out", demo.length > 0,
   demo.split("\n").map((l) => l.split("|")[0]).join(", "));
 
-// Which positions are they? Board order is bid desc, bid_at asc.
-const positions = q(`select row_number() over (order by b.bid_paise desc, b.bid_at asc) as pos, r.remaining
+// Which positions are they? Board order is vote count desc, then earliest
+// listing — the same ranking lib/board.ts:getBoard uses.
+const positions = q(`select row_number() over (
+                       order by (select count(*) from votes v where v.brand_id = b.id) desc, b.bid_at asc
+                     ) as pos, r.remaining
                      from brands b left join rewards r on r.brand_id = b.id
                      where b.is_demo = true and b.bid_paise > 0`)
   .split("\n")
@@ -333,9 +338,87 @@ ok("claimed-out: a board with nothing left refuses the round", r.status === 409,
 q(`update rewards set remaining = 14 where id in ('${liveIds.join("','")}')`);
 r = await call("/api/play/walk?demo=1");
 ok("claimed-out: and works again once stock is back", r.status === 200, `status=${r.status}`);
-// Put the two simulated ones back out.
+// Put back whichever demo brands were all-claimed when this section started
+// — read from `demo` rather than hardcoded, so a reseed that changes which
+// showcase brands are simulated out doesn't leave a stale name in here.
+const claimedOutNames = demo.split("\n").map((l) => l.split("|")[0]);
 q(`update rewards set remaining = 0 from brands b
-   where rewards.brand_id = b.id and b.is_demo = true and b.name in ('Kaapi Kettle','Sur Stream')`);
+   where rewards.brand_id = b.id and b.is_demo = true
+     and b.name = any(array['${claimedOutNames.join("','")}'])`);
+
+// =================================================================== 5. VOTING
+console.log("\n-- voting");
+
+const v1Email = `t2-voter1-${stamp}@brandgenie.test`;
+const v2Email = `t2-voter2-${stamp}@brandgenie.test`;
+madeEmails.push(v1Email, v2Email);
+signIn("voter1", v1Email, "customer");
+signIn("voter2", v2Email, "customer");
+
+const beforeVotes = q(`select count(*) from votes where brand_id = '${brandId}'`);
+ok("vote: this freshly listed brand starts with no votes", beforeVotes === "0", beforeVotes);
+
+r = await call("/api/brands/vote", { method: "POST", as: "voter1", body: { brandId } });
+ok("vote: a signed-in customer can upvote a brand", r.status === 200 && r.data.voteCount >= 1, JSON.stringify(r.data));
+
+r = await call("/api/brands/vote", { method: "POST", as: "voter1", body: { brandId } });
+ok("vote: the same customer can't vote the same brand twice", r.status === 409, r.data.error);
+
+r = await call("/api/brands/vote", { method: "POST", as: "voter2", body: { brandId } });
+ok("vote: a different customer's vote for the same brand is counted",
+  r.status === 200 && r.data.voteCount === Number(beforeVotes) + 2, `voteCount=${r.data.voteCount}`);
+
+ok("vote: the unique index actually holds two distinct voters, one brand",
+  q(`select count(*) from votes where brand_id = '${brandId}' and voter_id in
+     (select id from users where email in ('${v1Email}','${v2Email}'))`) === "2");
+
+r = await call("/api/brands/vote", { method: "POST", as: "brand", body: { brandId } });
+ok("vote: a merchant account can't vote", r.status === 403, r.data.error);
+
+r = await call("/api/brands/vote", { method: "POST", body: { brandId } });
+ok("vote: signed out can't vote", r.status === 401, r.data.error);
+
+r = await call("/api/brands/vote", { method: "POST", as: "voter1", body: { brandId: "00000000-0000-0000-0000-000000000000" } });
+ok("vote: an unknown brand is refused", r.status === 404, r.data.error);
+
+// Votes are one-per-brand, not one-per-account: prove it by having the same
+// customer vote for a second, different brand, then use that same pair of
+// brands to prove votes — not listing order — decide rank on the board.
+const rankA = q(`with u as (insert into users (email, role) values ('t2-ranka-${stamp}@brandgenie.test','merchant') returning id),
+  b as (insert into brands (user_id, name, category, bid_paise, bid_at, is_demo)
+        select id, 'ZZ Rank A ${stamp}', 'Lifestyle', ${LISTING_FEE_PAISE}, now() - interval '2 minutes', false from u
+        returning id)
+  select id from b`);
+const rankB = q(`with u as (insert into users (email, role) values ('t2-rankb-${stamp}@brandgenie.test','merchant') returning id),
+  b as (insert into brands (user_id, name, category, bid_paise, bid_at, is_demo)
+        select id, 'ZZ Rank B ${stamp}', 'Lifestyle', ${LISTING_FEE_PAISE}, now() - interval '1 minutes', false from u
+        returning id)
+  select id from b`);
+madeEmails.push(`t2-ranka-${stamp}@brandgenie.test`, `t2-rankb-${stamp}@brandgenie.test`);
+
+// B listed later but gets two votes to A's one — B should still outrank A.
+// voter1 already voted once above (on `brandId`); this is their second,
+// different brand — exactly the "one-per-brand, not one-per-account" case.
+r = await call("/api/brands/vote", { method: "POST", as: "voter1", body: { brandId: rankB } });
+ok("vote: the same customer voting for a second, different brand succeeds",
+  r.status === 200, JSON.stringify(r.data));
+r = await call("/api/brands/vote", { method: "POST", as: "voter2", body: { brandId: rankB } });
+await call("/api/brands/vote", { method: "POST", as: "voter2", body: { brandId: rankA } });
+
+const boardOrder = q(`select name from brands where is_demo = false and bid_paise > 0
+                       order by (select count(*) from votes v where v.brand_id = brands.id) desc, bid_at asc
+                       limit 60`).split("\n");
+const posA = boardOrder.indexOf(`ZZ Rank A ${stamp}`);
+const posB = boardOrder.indexOf(`ZZ Rank B ${stamp}`);
+ok("vote: more votes ranks higher even though it listed later",
+  posB >= 0 && posA >= 0 && posB < posA, `A at ${posA}, B at ${posB}`);
+
+const boardPage = await call("/");
+const nameOrder = [...boardPage.text.matchAll(/tile-name">([^<]+)</g)].map((m) => m[1]);
+const pageA = nameOrder.indexOf(`ZZ Rank A ${stamp}`);
+const pageB = nameOrder.indexOf(`ZZ Rank B ${stamp}`);
+ok("vote: the live board page reflects the same order",
+  pageB >= 0 && pageA >= 0 && pageB < pageA, `A at ${pageA}, B at ${pageB}`);
 
 console.log(`\n=== ${pass} passed, ${fail} failed\n`);
 process.exitCode = fail ? 1 : 0;

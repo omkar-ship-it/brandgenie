@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getSessionUser } from "@/lib/session";
 import { getBoard, getBrandForUser } from "@/lib/board";
 import { razorpayConfigured } from "@/lib/razorpay";
-import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, DEFAULT_REWARD_VALID_DAYS, rupees } from "@/lib/rules";
+import { BOARD_SIZE, CATEGORIES, DEFAULT_REWARD_VALID_DAYS, LISTING_FEE_PAISE, rupees } from "@/lib/rules";
 import { IconStore, IconTag } from "@/components/icons";
 import { BrandConsole, type BrandDraft } from "@/components/BrandConsole";
 import { BrandStatsPanel } from "@/components/BrandStats";
@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const EMPTY: BrandDraft = {
   name: "",
-  category: "Food & Beverage",
+  category: CATEGORIES[0],
   tagline: "",
   area: "",
   website: "",
@@ -30,17 +30,12 @@ export default async function BrandPage() {
   const user = await getSessionUser();
 
   const board = await getBoard();
-  const topBid = board[0]?.bidPaise ?? 0;
   const openPlaces = BOARD_SIZE - board.length;
-  const entryPaise =
-    openPlaces > 0
-      ? BID_BASE_PAISE
-      : Math.max(BID_BASE_PAISE, (board.at(-1)?.bidPaise ?? 0) + BID_STEP_PAISE);
 
   /**
    * Signed out this used to be a sign-in wall with nothing on it, which asks
    * a brand to create an account before finding out what any of this costs.
-   * Everything here is public anyway — the board shows the prices — so show
+   * Everything here is public anyway — the board shows the fee — so show
    * the offer and let the account come after the decision.
    */
   if (!user) {
@@ -61,11 +56,11 @@ export default async function BrandPage() {
           <Figure
             label="Places taken"
             value={`${board.length}/${BOARD_SIZE}`}
-            note={openPlaces > 0 ? `${openPlaces} still open` : "outbid someone to get on"}
+            note={openPlaces > 0 ? `${openPlaces} still open` : "new listings still join the list"}
             tint="#6d3bef"
           />
-          <Figure label="Costs from" value={rupees(entryPaise)} note={`rises in ${rupees(BID_STEP_PAISE)} steps`} tint="#0f8b6c" />
-          <Figure label="Top bid today" value={rupees(topBid)} note="whoever holds #1" tint="#b4560f" />
+          <Figure label="Listing fee" value={rupees(LISTING_FEE_PAISE)} note="flat, one time, for everyone" tint="#0f8b6c" />
+          <Figure label="Position" value="Customer votes" note="not for sale after you list" tint="#b4560f" />
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -77,17 +72,17 @@ export default async function BrandPage() {
             At your counter, where staff see a live code on a 30-second timer. Or online, where we hand out one
             of your own single-use discount codes per win.
           </Step>
-          <Step n={3} title="Bid for your place" tint="#1789a6">
-            Position is purely what you bid, highest first. The higher you sit, the sooner the genie reaches you
-            on every walk.
+          <Step n={3} title={`List for ${rupees(LISTING_FEE_PAISE)}`} tint="#1789a6">
+            One flat fee gets you listed. From there, customers vote you up the board — the higher you sit, the
+            sooner the genie reaches you on every walk.
           </Step>
         </div>
 
         <div className="card mt-6 flex flex-wrap items-center gap-4 p-5">
           <IconStore size={24} className="text-gold" />
           <p className="min-w-[220px] flex-1 text-[13px] text-ink-soft">
-            You&rsquo;ll see your tile exactly as customers do, plus how many people opened it, how many rewards
-            went out and how many came back redeemed.
+            You&rsquo;ll see your tile exactly as customers do, plus how many people opened it, voted for it, and
+            how many rewards went out and came back redeemed.
           </p>
           <Link href="/login?next=/brand&as=merchant" className="btn btn-primary">
             <IconTag /> Get started
@@ -106,6 +101,7 @@ export default async function BrandPage() {
 
   const owned = await getBrandForUser(user.id);
   const position = owned ? (board.findIndex((e) => e.brandId === owned.brand.id) + 1 || null) : null;
+  const listedEntry = owned ? board.find((e) => e.brandId === owned.brand.id) : undefined;
 
   const draft: BrandDraft = owned
     ? {
@@ -128,24 +124,25 @@ export default async function BrandPage() {
   const stats = owned ? await getBrandStats(owned.brand.id, owned.reward?.redemptionType ?? "counter") : null;
   const coupons = owned?.reward ? await getCouponCounts(owned.reward.id) : { total: 0, unused: 0 };
   const currentBid = owned?.brand.bidPaise ?? 0;
-  const minPaise = Math.max(BID_BASE_PAISE, currentBid + BID_STEP_PAISE);
-  // Enough to clear whoever holds #1 today, rounded up to a whole step.
-  const suggested = Math.max(minPaise, Math.ceil((topBid + BID_STEP_PAISE) / BID_STEP_PAISE) * BID_STEP_PAISE);
+  const listed = currentBid > 0;
+  const voteCount = listedEntry?.voteCount ?? 0;
 
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-8 sm:px-6">
       <header className="mb-6">
         <h1 className="text-[26px] font-semibold">For brands</h1>
         <p className="mt-1 max-w-[62ch] text-[13.5px] text-ink-soft">
-          Signed in as <span className="mono">{user.email}</span>. Position #1 currently costs{" "}
-          <span className="mono font-semibold">{rupees(topBid + BID_STEP_PAISE)}</span>.
+          Signed in as <span className="mono">{user.email}</span>.{" "}
+          {listed
+            ? "Your position moves with customer votes, not payment."
+            : `Listing costs a flat ${rupees(LISTING_FEE_PAISE)} — the same for every brand.`}
         </p>
       </header>
 
       {!razorpayConfigured && (
         <p className="card mb-5 p-4 text-[13px] text-warn">
-          <strong>Test mode.</strong> No Razorpay keys are configured, so bids are confirmed without a real payment and
-          no card details are taken anywhere in this flow.
+          <strong>Test mode.</strong> No Razorpay keys are configured, so the listing fee is confirmed without a
+          real payment and no card details are taken anywhere in this flow.
         </p>
       )}
 
@@ -161,11 +158,10 @@ export default async function BrandPage() {
         logoUrl={owned?.brand.logoUrl ?? null}
         canUploadLogo={Boolean(process.env.BLOB_READ_WRITE_TOKEN)}
         coupons={coupons}
-        currentBidPaise={currentBid}
+        listed={listed}
         position={position}
+        voteCount={voteCount}
         clicks={owned?.brand.clicks ?? 0}
-        suggestedPaise={suggested}
-        minPaise={minPaise}
       />
     </div>
   );

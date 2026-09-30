@@ -12,7 +12,7 @@ const mono = IBM_Plex_Mono({ variable: "--font-mono-face", subsets: ["latin"], w
 
 export const metadata: Metadata = {
   title: "LoyalGenie",
-  description: "Brands bid for the board. One round a day decides who you walk away with.",
+  description: "Brands list for the board. Customers vote them up it. One round a day decides who you walk away with.",
 };
 
 // The two sides of the product get different doors. A signed-out visitor
@@ -105,7 +105,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                       a hole in the middle of it. */}
                   <IconTag size={14} />
                   <span>
-                    Bid<span className="hidden sm:inline"> for a spot</span>
+                    List<span className="hidden sm:inline"> your brand</span>
                   </span>
                 </Link>
               </>

@@ -33,7 +33,7 @@ function Svg({ children, size = 16, className }: IconProps & { children: React.R
   );
 }
 
-/** Bidding: a price tag. */
+/** The listing fee: a price tag. */
 export function IconTag(p: IconProps) {
   return (
     <Svg {...p}>

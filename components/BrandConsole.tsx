@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { BID_STEP_PAISE, CATEGORIES, CATEGORY_ICON, rupees } from "@/lib/rules";
+import { CATEGORIES, CATEGORY_ICON, LISTING_FEE_PAISE, rupees } from "@/lib/rules";
 import { TilePreview } from "./TilePreview";
-import { IconCart, IconCounter } from "./icons";
+import { IconCart, IconCounter, IconTrendUp } from "./icons";
 
 export type BrandDraft = {
   name: string;
@@ -82,22 +82,21 @@ export function BrandConsole({
   logoUrl: initialLogo,
   canUploadLogo,
   coupons: initialCoupons,
-  currentBidPaise,
+  listed,
   position,
+  voteCount,
   clicks,
-  suggestedPaise,
-  minPaise,
 }: {
   draft: BrandDraft;
   hasBrand: boolean;
   logoUrl: string | null;
   canUploadLogo: boolean;
   coupons: { total: number; unused: number };
-  currentBidPaise: number;
+  /** Whether the flat listing fee has been paid. */
+  listed: boolean;
   position: number | null;
+  voteCount: number;
   clicks: number;
-  suggestedPaise: number;
-  minPaise: number;
 }) {
   const [form, setForm] = useState(draft);
   const [saving, setSaving] = useState(false);
@@ -105,7 +104,6 @@ export function BrandConsole({
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
-  const [amount, setAmount] = useState(String(Math.round(suggestedPaise / 100)));
   const [paying, setPaying] = useState(false);
   const [logoUrl, setLogoUrl] = useState(initialLogo);
   const [logoBusy, setLogoBusy] = useState(false);
@@ -186,20 +184,17 @@ export function BrandConsole({
     setNotice("Listing saved.");
   }
 
-  async function bid() {
-    const paise = Math.round(Number(amount) * 100);
+  /**
+   * Pay the flat listing fee, once. There's no amount to choose any more —
+   * the client sends nothing but the request itself, and the server decides
+   * the price. Position afterwards comes from customer votes, not a second
+   * payment.
+   */
+  async function payListingFee() {
     setError("");
     setNotice("");
-    if (!Number.isFinite(paise) || paise < minPaise || paise % BID_STEP_PAISE !== 0) {
-      return setError(`Bid at least ${rupees(minPaise)}, in steps of ${rupees(BID_STEP_PAISE)}.`);
-    }
-
     setPaying(true);
-    const res = await fetch("/api/bids/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amountPaise: paise }),
-    });
+    const res = await fetch("/api/bids/create-order", { method: "POST" });
     const order = await res.json().catch(() => ({}));
     if (!res.ok) {
       setPaying(false);
@@ -223,8 +218,8 @@ export function BrandConsole({
       window.location.reload();
     };
 
-    // Test mode has no gateway to open — the bid is confirmed straight away so
-    // the whole flow stays demoable without live keys.
+    // Test mode has no gateway to open — the fee is confirmed straight away
+    // so the whole flow stays demoable without live keys.
     if (order.mock) return confirm({});
 
     const ok = await loadCheckout();
@@ -239,7 +234,7 @@ export function BrandConsole({
       amount: order.amountPaise,
       currency: "INR",
       name: "LoyalGenie",
-      description: `Board bid — ${order.brandName}`,
+      description: `Board listing — ${order.brandName}`,
       prefill: { email: order.email },
       theme: { color: "#6d3bef" },
       handler: (response: RazorpayResponse) => void confirm(response),
@@ -552,7 +547,7 @@ export function BrandConsole({
             rewardIcon={form.rewardIcon}
             logoUrl={logoUrl}
             remaining={online ? coupons.unused : form.totalStock}
-            bidPaise={currentBidPaise}
+            voteCount={voteCount}
             position={position}
             clicks={clicks}
           />
@@ -567,32 +562,35 @@ export function BrandConsole({
             <span className="mono text-[22px] font-semibold">{position ? `#${position}` : "—"}</span>
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-[12.5px] text-ink-soft">Live bid</span>
-            <span className="mono text-[15px] font-semibold">{rupees(currentBidPaise)}</span>
+            <span className="text-[12.5px] text-ink-soft">Customer votes</span>
+            <span className="mono flex items-center gap-1.5 text-[15px] font-semibold">
+              <IconTrendUp size={14} /> {voteCount}
+            </span>
           </div>
         </div>
 
-        <p className="mt-4 text-[13px] text-ink-soft">
-          Higher bid, higher up the board — position #1 is whoever paid the most. Ties go to whoever bid first. A bid
-          buys visibility only; the genie&rsquo;s walk is the same for every brand.
-        </p>
-
-        <label className="label mt-5">Your bid (₹)</label>
-        <div className="flex gap-2">
-          <input
-            className="input mono"
-            inputMode="numeric"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ""))}
-          />
-          <button onClick={bid} disabled={paying || !saved} className="btn btn-primary shrink-0">
-            {paying ? "Processing…" : "Pay & take place"}
-          </button>
-        </div>
-        <p className="mono mt-2 text-[11.5px] text-ink-soft">
-          Minimum {rupees(minPaise)} · steps of {rupees(BID_STEP_PAISE)}
-        </p>
-        {!saved && <p className="mt-2 text-[12.5px] text-warn">Save your listing before bidding.</p>}
+        {listed ? (
+          <p className="mt-4 text-[13px] text-ink-soft">
+            More votes than the brand above you moves you up; fewer than the brand below moves you down. Listing
+            is a flat fee — position isn&rsquo;t for sale after that, and the genie&rsquo;s walk is the same for
+            every brand.
+          </p>
+        ) : (
+          <>
+            <p className="mt-4 text-[13px] text-ink-soft">
+              A one-time, flat fee — the same for every brand. Once you&rsquo;re listed, customers vote you up the
+              board; there&rsquo;s nothing further to pay.
+            </p>
+            <button
+              onClick={payListingFee}
+              disabled={paying || !saved}
+              className="btn btn-primary mt-5 w-full"
+            >
+              {paying ? "Processing…" : `List for ${rupees(LISTING_FEE_PAISE)}`}
+            </button>
+            {!saved && <p className="mt-2 text-[12.5px] text-warn">Save your listing before paying.</p>}
+          </>
+        )}
       </section>
       </div>
     </div>

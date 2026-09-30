@@ -26,8 +26,8 @@ export function Footer() {
               line rather than assumed. */}
           <p className="mt-2 max-w-[40ch] text-[12.5px] leading-relaxed text-ink-soft">
             {COMPANY.boardName} ({COMPANY.boardCodename}) is a marketing board within {COMPANY.product} —{" "}
-            {COMPANY.productTagline}. Brands bid for a place on the board; customers play one round a day for a
-            reward, provided and honoured by the brand itself.
+            {COMPANY.productTagline}. Brands list for a flat fee and customers vote them up the board; a reward is
+            provided and honoured by the brand itself.
           </p>
         </div>
 

@@ -4,7 +4,7 @@ import { db, hasDb } from "@/lib/db";
 import { plays } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getBoard } from "@/lib/board";
-import { BID_BASE_PAISE, BID_STEP_PAISE, BOARD_SIZE, dayKey, rupees } from "@/lib/rules";
+import { BOARD_SIZE, dayKey, rupees, LISTING_FEE_PAISE } from "@/lib/rules";
 import { StopBoard } from "@/components/StopBoard";
 import { IconStore, IconTag, IconTrendUp } from "@/components/icons";
 import { EmptyBoardCard } from "@/components/boardparts";
@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export default async function BoardPage() {
   const user = await getSessionUser();
-  const board = await getBoard();
+  const board = await getBoard(false, user?.id);
 
   let playedToday = false;
   if (user && hasDb && db) {
@@ -27,14 +27,9 @@ export default async function BoardPage() {
 
   const isMerchant = user?.role === "merchant";
   const bidHref = isMerchant ? "/brand" : "/login?next=/brand&as=merchant";
-  const topBid = board[0]?.bidPaise ?? 0;
+  const topVotes = board[0]?.voteCount ?? 0;
   const stock = board.reduce((sum, e) => sum + e.remaining, 0);
   const openPlaces = BOARD_SIZE - board.length;
-  // What it actually costs to get on: the floor while there's room, one step
-  // over the cheapest brand once the board is full and you have to displace one.
-  const entryPaise = openPlaces > 0
-    ? BID_BASE_PAISE
-    : Math.max(BID_BASE_PAISE, (board.at(-1)?.bidPaise ?? 0) + BID_STEP_PAISE);
 
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-8 sm:px-6">
@@ -42,20 +37,20 @@ export default async function BoardPage() {
         <div>
           <h1 className="text-[26px] font-semibold">The Board</h1>
           <p className="mt-1 max-w-[52ch] text-[13.5px] text-ink-soft">
-            {BOARD_SIZE} places, ranked purely by what each brand bid. Once a day the genie walks it — stop him on
-            the brand you want and their reward is yours.
+            {BOARD_SIZE} places, ranked by customer votes. Once a day the genie walks it — stop him on the brand
+            you want and their reward is yours.
           </p>
         </div>
         <div className="flex gap-5 text-right">
           <Stat label="Brands on" value={`${board.length}/${BOARD_SIZE}`} />
-          <Stat label="Top bid" value={rupees(topBid)} />
+          <Stat label="Most votes" value={String(topVotes)} />
           <Stat label="Rewards left" value={String(stock)} />
         </div>
       </header>
 
       {!hasDb && (
         <p className="card mb-5 p-4 text-[13px] text-warn">
-          No database connected — set <span className="mono">DATABASE_URL</span> to see live bids.
+          No database connected — set <span className="mono">DATABASE_URL</span> to see live listings.
         </p>
       )}
 
@@ -73,31 +68,31 @@ export default async function BoardPage() {
       )}
 
       {/* The merchant offer gets its own strip rather than a button wedged
-          beside Play: the two numbers a brand actually weighs — how much
-          room is left and what it costs to get in — sit next to the CTA. */}
+          beside Play: what a brand actually weighs — how much room is left
+          and what listing costs — sits next to the CTA. */}
       <aside className="bidbar mt-5">
         <IconStore size={24} className="text-gold" />
         <div className="min-w-[200px] flex-1">
           <div className="text-[14.5px] font-semibold">
             {isMerchant
-              ? "Move up the board"
+              ? "Your position moves with customer votes"
               : openPlaces > 0
                 ? `${openPlaces} of ${BOARD_SIZE} places still open`
-                : "The board is full — outbid someone to get on"}
+                : "The board is full — but new listings still join the list"}
           </div>
           <p className="text-[12.5px] text-ink-soft">
-            From <span className="mono font-semibold">{rupees(entryPaise)}</span>. A bid buys your place in the
-            order — and the higher you sit, the sooner the genie reaches you on every walk.
+            List for a flat <span className="mono font-semibold">{rupees(LISTING_FEE_PAISE)}</span>. Position isn&rsquo;t
+            for sale after that — customers vote you up, and the higher you sit, the sooner the genie reaches you.
           </p>
         </div>
         <Link href={bidHref} className="btn btn-primary">
           {isMerchant ? (
             <>
-              <IconTrendUp /> Raise your bid
+              <IconTrendUp /> See your votes
             </>
           ) : (
             <>
-              <IconTag /> Bid for a spot
+              <IconTag /> List for {rupees(LISTING_FEE_PAISE)}
             </>
           )}
         </Link>

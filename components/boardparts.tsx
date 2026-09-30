@@ -2,8 +2,8 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
-import { CATEGORY_ACCENT, CATEGORY_ICON, rupees } from "@/lib/rules";
-import { IconCart, IconCounter, IconEye } from "./icons";
+import { CATEGORY_ACCENT, CATEGORY_ICON } from "@/lib/rules";
+import { IconCart, IconCounter, IconEye, IconTrendUp } from "./icons";
 
 /** 1 234 clicks reads as "1.2k" once a tile gets busy. */
 export function compact(n: number) {
@@ -76,9 +76,9 @@ export function useBoardMetrics() {
    * The same thing, measured off the DOM.
    *
    * Arithmetic works only while every cell is the same size. A grid where
-   * the top bids take bigger tiles breaks that, so the genie's box is read
-   * from the tile he's actually on. Re-measured whenever the tile or the
-   * layout changes.
+   * the top-voted brands take bigger tiles breaks that, so the genie's box
+   * is read from the tile he's actually on. Re-measured whenever the tile
+   * or the layout changes.
    */
   function measuredStyle(position: number) {
     const tile = boardRef.current?.querySelectorAll<HTMLElement>(".tile")[position - 1];
@@ -110,7 +110,7 @@ export function BoardTile({
   selected?: boolean;
   /** Where tapping the tile does something else, this opens the card. */
   onInspect?: () => void;
-  /** How much of the showcase grid this brand's bid has earned it. */
+  /** How much of the showcase grid this brand's votes have earned it. */
   span?: "xl" | "wide";
 }) {
   const accent = CATEGORY_ACCENT[entry.category] ?? "var(--brand)";
@@ -189,7 +189,7 @@ export function BoardTile({
       {out && <span className="tile-out">ALL CLAIMED</span>}
       <span className="tile-stats">
         <span className="tile-bid" style={{ color: accent }}>
-          {rupees(entry.bidPaise)}
+          {compact(entry.voteCount)} {entry.voteCount === 1 ? "vote" : "votes"}
         </span>
         <span className="tile-clicks">{compact(entry.clicks)} clicks</span>
       </span>
@@ -314,10 +314,46 @@ export function useBrandSheet() {
   return { selected, openBrand, closeBrand: () => setSelected(null) };
 }
 
-/** The card behind a tile: who they are, what they're giving, where to find them. */
-export function BrandSheet({ entry, onClose }: { entry: BoardEntry; onClose: () => void }) {
+/**
+ * The card behind a tile: who they are, what they're giving, where to find
+ * them — and, now, the vote that decides whether they climb.
+ */
+export function BrandSheet({
+  entry,
+  onClose,
+  signedIn = false,
+  isMerchant = false,
+  backTo = "/",
+}: {
+  entry: BoardEntry;
+  onClose: () => void;
+  /** Voting needs an account — a merchant's is the wrong kind. */
+  signedIn?: boolean;
+  isMerchant?: boolean;
+  /** Where a signed-out visitor is sent back to after signing in to vote. */
+  backTo?: string;
+}) {
   const accent = CATEGORY_ACCENT[entry.category] ?? "var(--brand)";
   const online = entry.redemptionType === "online";
+  const [voteCount, setVoteCount] = useState(entry.voteCount);
+  const [voted, setVoted] = useState(entry.votedByMe);
+  const [voting, setVoting] = useState(false);
+  const [voteError, setVoteError] = useState("");
+
+  async function vote() {
+    setVoting(true);
+    setVoteError("");
+    const res = await fetch("/api/brands/vote", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brandId: entry.brandId }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setVoting(false);
+    if (!res.ok) return setVoteError(data.error ?? "Couldn't record that vote.");
+    setVoteCount(data.voteCount ?? voteCount + 1);
+    setVoted(true);
+  }
 
   return (
     <div
@@ -330,7 +366,8 @@ export function BrandSheet({ entry, onClose }: { entry: BoardEntry; onClose: () 
       <div className="sheet p-6">
         <div className="h-1.5 -mx-6 -mt-6 mb-5 rounded-t-[18px]" style={{ background: accent }} />
         <div className="mono text-[11px] text-ink-soft">
-          Position #{entry.position} · bid {rupees(entry.bidPaise)} · {compact(entry.clicks)} clicks
+          Position #{entry.position} · {voteCount} {voteCount === 1 ? "vote" : "votes"} · {compact(entry.clicks)}{" "}
+          clicks
         </div>
         <div className="mt-1 flex items-center gap-3">
           {entry.logoUrl && (
@@ -346,6 +383,34 @@ export function BrandSheet({ entry, onClose }: { entry: BoardEntry; onClose: () 
             {CATEGORY_ICON[entry.category]} {entry.category}
           </span>
           {entry.area && <span className="text-ink-soft">{entry.area}</span>}
+        </div>
+
+        {/* Voting is what moves a brand up the board now — a bigger fee
+            doesn't. Kept as its own block rather than folded into the
+            stats line, since it's the one thing here a visitor can act on. */}
+        <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-sunk p-4">
+          <div>
+            <div className="text-[11px] font-semibold tracking-wide text-ink-soft uppercase">Customer votes</div>
+            <div className="mono mt-0.5 flex items-center gap-1.5 text-[19px] font-semibold">
+              <IconTrendUp size={16} /> {voteCount}
+            </div>
+            {voteError && <p className="mt-1 text-[11.5px] font-semibold text-warn">{voteError}</p>}
+          </div>
+          {!signedIn ? (
+            <a href={`/login?next=${encodeURIComponent(backTo)}`} className="btn btn-ghost shrink-0">
+              Sign in to vote
+            </a>
+          ) : isMerchant ? (
+            <span className="shrink-0 text-[11.5px] text-ink-soft">Brands can&rsquo;t vote</span>
+          ) : voted ? (
+            <button disabled className="btn btn-ghost shrink-0">
+              <IconTrendUp size={14} /> Voted
+            </button>
+          ) : (
+            <button onClick={vote} disabled={voting} className="btn btn-primary shrink-0">
+              <IconTrendUp size={14} /> {voting ? "…" : "Upvote"}
+            </button>
+          )}
         </div>
 
         {entry.rewardLabel && (
@@ -414,11 +479,11 @@ export function EmptyBoardCard({ bidHref, playful = false }: { bidHref: string; 
       <h2 className="mt-3 text-[18px] font-semibold">Nobody&rsquo;s on the board yet</h2>
       <p className="mx-auto mt-1 max-w-[42ch] text-[13.5px] text-ink-soft">
         {playful
-          ? "There's nothing here for the genie to walk yet. The first brand to bid takes position #1."
-          : "The first brand to bid takes position #1 and stays there until someone outbids them."}
+          ? "There's nothing here for the genie to walk yet. List for a flat fee and customer votes take it from there."
+          : "List for a flat fee to take position #1 — then it's customer votes, not money, that decide who stays there."}
       </p>
       <a href={bidHref} className="btn btn-primary mt-5">
-        Claim position #1
+        List your brand
       </a>
     </div>
   );
