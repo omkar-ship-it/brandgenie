@@ -1,7 +1,7 @@
 import { Clause, Important, LegalPage } from "@/components/legal";
 import { COMPANY } from "@/lib/company";
 
-export const metadata = { title: "Privacy Policy · LoyalGenie" };
+export const metadata = { title: `Privacy Policy · ${COMPANY.product}` };
 
 const mail = (
   <a className="lnk" href={`mailto:${COMPANY.email}`}>

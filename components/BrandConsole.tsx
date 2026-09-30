@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CATEGORIES, CATEGORY_ICON, LISTING_FEE_PAISE, rupees } from "@/lib/rules";
+import { COMPANY } from "@/lib/company";
 import { TilePreview } from "./TilePreview";
 import { IconCart, IconCounter, IconTrendUp } from "./icons";
 
@@ -233,7 +234,7 @@ export function BrandConsole({
       order_id: order.orderId,
       amount: order.amountPaise,
       currency: "INR",
-      name: "LoyalGenie",
+      name: COMPANY.product,
       description: `Board listing — ${order.brandName}`,
       prefill: { email: order.email },
       theme: { color: "#6d3bef" },

@@ -2,7 +2,7 @@ import { Clause, Important, LegalPage } from "@/components/legal";
 import { COMPANY } from "@/lib/company";
 import { BOARD_SIZE, LISTING_FEE_PAISE, rupees } from "@/lib/rules";
 
-export const metadata = { title: "Terms & Conditions · LoyalGenie" };
+export const metadata = { title: `Terms & Conditions · ${COMPANY.product}` };
 
 const mail = (
   <a className="lnk" href={`mailto:${COMPANY.email}`}>

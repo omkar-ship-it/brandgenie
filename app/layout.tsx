@@ -5,13 +5,14 @@ import { getSessionUser } from "@/lib/session";
 import { IconGift, IconStore, IconTag } from "@/components/icons";
 import { VisitorCount } from "@/components/VisitorCount";
 import { Footer } from "@/components/Footer";
+import { COMPANY } from "@/lib/company";
 import "./globals.css";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"] });
 const mono = IBM_Plex_Mono({ variable: "--font-mono-face", subsets: ["latin"], weight: ["400", "600"] });
 
 export const metadata: Metadata = {
-  title: "LoyalGenie",
+  title: COMPANY.product,
   description: "Brands list for the board. Customers vote them up it. One round a day decides who you walk away with.",
 };
 
@@ -47,7 +48,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 mark either crops him or shrinks him to nothing. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/genie.png" alt="" className="brandmark" />
-            LoyalGenie
+            {COMPANY.product}
           </Link>
           <div className="flex flex-wrap items-center gap-1">
             {links.map((l) => (

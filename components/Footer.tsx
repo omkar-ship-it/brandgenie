@@ -8,7 +8,7 @@ import { COMPANY, legalYear } from "@/lib/company";
  *
  * Rendered on every page rather than only the marketing ones — someone
  * deciding whether to hand over money is most likely to look for it from
- * the bid page, not the home page.
+ * the brand listing page, not the home page.
  */
 export function Footer() {
   return (
@@ -18,16 +18,11 @@ export function Footer() {
           <div className="flex items-center gap-2 font-semibold">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/genie.png" alt="" className="brandmark" />
-            {COMPANY.boardName}
+            {COMPANY.product}
           </div>
-          {/* "BrandSquare" names nothing on its own — a visitor has to be
-              told what it's part of before the rest of the footer means
-              anything, so that relationship is spelled out in the first
-              line rather than assumed. */}
           <p className="mt-2 max-w-[40ch] text-[12.5px] leading-relaxed text-ink-soft">
-            {COMPANY.boardName} ({COMPANY.boardCodename}) is a marketing board within {COMPANY.product} —{" "}
-            {COMPANY.productTagline}. Brands list for a flat fee and customers vote them up the board; a reward is
-            provided and honoured by the brand itself.
+            Brands list for a flat fee and customers vote them up the board; a reward is provided and honoured by
+            the brand itself. Built on {COMPANY.parentPlatform}, {COMPANY.parentPlatformTagline}.
           </p>
         </div>
 
@@ -80,7 +75,7 @@ export function Footer() {
             © {legalYear()} {COMPANY.legalName}. All rights reserved.
           </span>
           <span>
-            {COMPANY.boardName} is part of {COMPANY.product}, a {COMPANY.legalName} product.
+            {COMPANY.product} is a {COMPANY.legalName} product, built on {COMPANY.parentPlatform}.
           </span>
         </div>
       </div>

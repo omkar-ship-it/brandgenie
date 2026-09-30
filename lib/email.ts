@@ -77,7 +77,7 @@ async function sendMsg91TemplateEmail(opts: {
   }
 }
 
-export const BRAND_NAME = "LoyalGenie";
+export const BRAND_NAME = "BrandSquare";
 
 /**
  * NOTE: MSG91 merge-tag names are exactly whatever text was typed into that
@@ -94,10 +94,13 @@ export async function sendOtpEmail(to: string, code: string): Promise<SendResult
     variables: {
       otp: code,
       company_name: BRAND_NAME,
-      // The template's subject is `Your {{LoyalGenie}} OTP` — the brand name
-      // was typed into the tag itself by mistake, so the subject renders as
-      // "Your  OTP" unless we feed it. Supplying it keeps the subject right
-      // until someone fixes the template; harmless once they do.
+      // The template's subject is `Your {{LoyalGenie}} OTP` — the tag's NAME
+      // itself is the literal text "LoyalGenie", typed into the template by
+      // mistake instead of a proper placeholder, so this key must stay
+      // exactly that regardless of what BRAND_NAME says — renaming it here
+      // without also editing the live MSG91 template breaks the subject
+      // silently. The VALUE is BRAND_NAME, so the subject now reads
+      // "Your BrandSquare OTP" until someone fixes the template itself.
       LoyalGenie: BRAND_NAME,
     },
     logLabel: "otp",

@@ -16,6 +16,21 @@ the Vercel project, the deployed URL, the `bg_session` cookie and the
 those — they're identifiers, not branding, and changing them costs a
 redeployment and everyone's session for no user-visible gain.
 
+**Renamed again, in-app, on 2026-09-30: the live site is now "BrandSquare"**,
+at its own domain (`brandsquare.fun`, moved off the `brandsquare.loyalgenie.in`
+subdomain it briefly used). `lib/company.ts:COMPANY.product` is the single
+source of truth — nav wordmark, page titles, footer, Terms & Conditions,
+Privacy Policy, the OTP email subject and the Razorpay checkout name all read
+from it. "LoyalGenie" persists only as `COMPANY.parentPlatform` — a lineage
+credit in the footer ("Built on LoyalGenie…") — since BrandSquare now presents
+and is legally governed as its own product rather than a board living inside
+a bigger LoyalGenie site. Same rule as before: repo, Vercel project, deployed
+`.vercel.app` URL, `bg_session` cookie, `@brandgenie.test` seed addresses, and
+`MSG91_EMAIL_DOMAIN`/`MSG91_FROM_EMAIL` (still `mail.loyalgenie.in` — that's a
+DNS/DKIM-authenticated sending domain, not safe to rename without setting up
+equivalent authentication for brandsquare.fun in MSG91 first) are identifiers,
+not branding, and stay as they are.
+
 **ViralGenie** (`github.com/omkar-ship-it/viralgenie`, `~/Documents/viralgenie`)
 was the exploratory prototype — roughly twelve commits of adapting outbid.lol's
 pay-to-rank mechanic onto LoyalGenie. It accumulated a lot: rotating brand

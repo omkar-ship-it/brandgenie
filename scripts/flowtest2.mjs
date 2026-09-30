@@ -79,7 +79,7 @@ process.on("exit", () => {
   }
 });
 
-console.log(`\n=== LoyalGenie · listing, payment, reset, claimed-out — ${BASE}\n`);
+console.log(`\n=== BrandSquare · listing, payment, reset, claimed-out — ${BASE}\n`);
 
 const dayKey = q(`select to_char(now() at time zone 'utc' + interval '330 minutes', 'YYYY-MM-DD')`);
 console.log(`(IST day key: ${dayKey})\n`);
