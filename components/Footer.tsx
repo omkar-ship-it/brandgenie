@@ -22,7 +22,7 @@ export function Footer() {
           </div>
           <p className="mt-2 max-w-[40ch] text-[12.5px] leading-relaxed text-ink-soft">
             Brands list for a flat fee and customers vote them up the board; a reward is provided and honoured by
-            the brand itself. Built on {COMPANY.parentPlatform}, {COMPANY.parentPlatformTagline}.
+            the brand itself.
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export function Footer() {
             © {legalYear()} {COMPANY.legalName}. All rights reserved.
           </span>
           <span>
-            {COMPANY.product} is a {COMPANY.legalName} product, built on {COMPANY.parentPlatform}.
+            {COMPANY.product} is a {COMPANY.legalName} product.
           </span>
         </div>
       </div>

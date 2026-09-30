@@ -228,6 +228,26 @@ h3 {
   letter-spacing: 0.03em;
 }
 
+/* Wishes is a real, live feature — purple like .navtry, not amber like
+   .navsoon — it's just gated to one exact minute, twice a day, and a
+   visitor deciding whether to check the page benefits from knowing that
+   before they click through to a closed window. */
+.navwish {
+  position: relative;
+  color: var(--brand) !important;
+  font-weight: 650;
+}
+.navwish::after {
+  content: "(11:11)";
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
 /* ------------------------------------------------------- the board */
 
 /*

@@ -66,7 +66,13 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 key={l.href}
                 href={l.href}
                 className={`rounded-full px-3 py-1.5 text-[13px] text-ink-soft transition-colors hover:bg-sunk hover:text-ink${
-                  l.href === "/try" ? " navtry" : SOON_HREFS.has(l.href) ? " navsoon" : ""
+                  l.href === "/try"
+                    ? " navtry"
+                    : l.href === "/wish"
+                      ? " navwish"
+                      : SOON_HREFS.has(l.href)
+                        ? " navsoon"
+                        : ""
                 }`}
               >
                 {l.label}
