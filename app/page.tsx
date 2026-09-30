@@ -8,6 +8,7 @@ import { BOARD_SIZE, dayKey, rupees, LISTING_FEE_PAISE } from "@/lib/rules";
 import { StopBoard } from "@/components/StopBoard";
 import { IconStore, IconTag, IconTrendUp } from "@/components/icons";
 import { EmptyBoardCard } from "@/components/boardparts";
+import { UpcomingBadge } from "@/components/UpcomingBadge";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,30 @@ export default async function BoardPage() {
           )}
         </Link>
       </aside>
+
+      {/* A compact pointer to the two concept previews, not a full pitch —
+          the board is what people came here for, and this only needs to
+          earn a click, not tell the whole story on its own page. */}
+      <div className="soon-row mt-5">
+        <Link href="/corner" className="card p-4 transition-transform hover:-translate-y-0.5" style={{ ["--tint" as string]: "var(--brand)" }}>
+          <div className="flex items-center justify-between">
+            <span className="text-[13.5px] font-semibold">Brand Corner</span>
+            <UpcomingBadge size="sm" />
+          </div>
+          <p className="mt-1 text-[12px] text-ink-soft">
+            A mini-game per brand — roll a dice, spin a wheel, beat the clock — with its own link to share anywhere.
+          </p>
+        </Link>
+        <Link href="/drops" className="card p-4 transition-transform hover:-translate-y-0.5" style={{ ["--tint" as string]: "var(--gold)" }}>
+          <div className="flex items-center justify-between">
+            <span className="text-[13.5px] font-semibold">Brand Drops</span>
+            <UpcomingBadge size="sm" />
+          </div>
+          <p className="mt-1 text-[12px] text-ink-soft">
+            Rewards, merch and mystery boxes that unlock at a set time — see how the countdown would feel.
+          </p>
+        </Link>
+      </div>
 
     </div>
   );

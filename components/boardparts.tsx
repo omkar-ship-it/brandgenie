@@ -3,23 +3,12 @@
 import { useCallback, useRef, useState } from "react";
 import type { BoardEntry } from "@/lib/board";
 import { CATEGORY_ACCENT, CATEGORY_ICON } from "@/lib/rules";
+import { compact, initials, hue } from "@/lib/tileVisuals";
 import { IconCart, IconCounter, IconEye, IconTrendUp } from "./icons";
 
-/** 1 234 clicks reads as "1.2k" once a tile gets busy. */
-export function compact(n: number) {
-  return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, "")}k` : String(n);
-}
-
-export function initials(name: string) {
-  const words = name.split(/\s+/).filter((w) => /[a-z]/i.test(w));
-  return (words.slice(0, 2).map((w) => w[0]).join("") || name.slice(0, 2) || "?").toUpperCase();
-}
-
-export function hue(seed: string) {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360;
-  return h;
-}
+// Re-exported so nothing else in the app has to know these moved — see
+// lib/tileVisuals.ts for why they live outside a "use client" file.
+export { compact, initials, hue };
 
 export type Prize = {
   code: string;

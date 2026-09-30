@@ -163,3 +163,84 @@ export function IconHandPick(p: IconProps) {
     </Svg>
   );
 }
+
+/* --------------------------------------------------------- Brand Corner
+ * Icons for the game types on the Brand Corner concept pages — none of
+ * these games are wired up, but the icon set is real: a placeholder emoji
+ * per game would look like the rest of the page hadn't been finished yet.
+ */
+
+/** Roll the dice. */
+export function IconDice(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <circle cx="8.5" cy="8.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="8.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="8.5" cy="15.5" r="1.1" fill="currentColor" stroke="none" />
+      <circle cx="15.5" cy="15.5" r="1.1" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
+/** Spin the wheel. */
+export function IconWheel(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M12 2.5 10 5.5h4Z" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="13" r="8.5" />
+      <path d="M12 13V6M12 13l6 3.2M12 13l-6 3.2" />
+    </Svg>
+  );
+}
+
+/** Quiz. */
+export function IconQuiz(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.3 9.4a2.7 2.7 0 1 1 3.9 2.4c-1 .5-1.2 1-1.2 2.1" />
+      <circle cx="12" cy="16.8" r="0.9" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}
+
+/** More games — a couple of cards, fanned. */
+export function IconCards(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <rect x="3.5" y="8" width="11" height="14" rx="2" transform="rotate(-12 9 15)" />
+      <rect x="8.5" y="4" width="11" height="14" rx="2" />
+    </Svg>
+  );
+}
+
+/** A drop — merchandise, a mystery box, whatever's inside. */
+export function IconBox(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M3.5 8.5 12 4l8.5 4.5V17L12 21.5 3.5 17Z" />
+      <path d="M3.5 8.5 12 13l8.5-4.5M12 13v8.5" />
+    </Svg>
+  );
+}
+
+/** Copy a shareable link. */
+export function IconLink(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M10 14a4 4 0 0 0 5.66 0l2-2a4 4 0 0 0-5.66-5.66l-1.1 1.1" />
+      <path d="M14 10a4 4 0 0 0-5.66 0l-2 2a4 4 0 0 0 5.66 5.66l1.1-1.1" />
+    </Svg>
+  );
+}
+
+/** A drop, arriving. */
+export function IconBolt(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M13 2 4 14h6l-1 8 9-12h-6Z" fill="currentColor" stroke="none" />
+    </Svg>
+  );
+}

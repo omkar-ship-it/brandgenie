@@ -275,6 +275,29 @@ export const visits = pgTable(
   (t) => [uniqueIndex("visits_visitor_day_idx").on(t.visitorId, t.dayKey)]
 );
 
+/**
+ * A visitor saying "I want this" on something that doesn't exist yet —
+ * Brand Corner or Brand Drops, both concept previews. The whole point of
+ * shipping the pages before the games or the unlock logic are real is to
+ * find out whether anyone would use them; a signal nobody can act on isn't
+ * validation.
+ *
+ * Deduped the same way `visits` dedupes a day: one first-party cookie id,
+ * one row per (module, target), so a dozen clicks from one person can't
+ * inflate the count shown publicly right next to the button.
+ */
+export const interestSignals = pgTable(
+  "interest_signals",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    module: text("module").notNull(), // "corner" | "drops"
+    targetSlug: text("target_slug").notNull(),
+    visitorId: uuid("visitor_id").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("interest_signals_idx").on(t.module, t.targetSlug, t.visitorId)]
+);
+
 // ---------------------------------------------------------------- wishes
 
 export const wishes = pgTable("wishes", {

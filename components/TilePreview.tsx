@@ -1,17 +1,7 @@
 "use client";
 
 import { CATEGORY_ACCENT } from "@/lib/rules";
-
-function initials(name: string) {
-  const words = name.split(/\s+/).filter((w) => /[a-z]/i.test(w));
-  return (words.slice(0, 2).map((w) => w[0]).join("") || name.slice(0, 2) || "?").toUpperCase();
-}
-
-function hue(seed: string) {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) % 360;
-  return h;
-}
+import { initials, hue } from "@/lib/tileVisuals";
 
 /**
  * The brand's own tile, drawn exactly as the board draws it.

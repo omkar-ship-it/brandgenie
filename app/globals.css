@@ -945,3 +945,115 @@ h3 {
 .lnk:hover {
   opacity: 0.8;
 }
+
+/* -------------------------------------------------- concept previews
+ *
+ * Brand Corner and Brand Drops are both proposals, not products — every
+ * surface here says so, in one consistent visual vocabulary, so nobody
+ * mistakes a mockup for something they can already use.
+ */
+
+.upcoming-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px 4px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--gold) 40%, var(--line));
+  background: color-mix(in srgb, var(--gold) 14%, var(--card));
+  color: color-mix(in srgb, var(--gold) 75%, var(--ink));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.upcoming-badge-sm {
+  padding: 2px 8px 2px 6px;
+  font-size: 9.5px;
+}
+.upcoming-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+  flex: none;
+}
+
+/* The nav links to both preview modules — amber rather than the brand
+   purple .navtry uses, so "try this now" and "this doesn't exist yet"
+   never look like the same kind of promise. */
+.navsoon {
+  position: relative;
+  color: color-mix(in srgb, var(--gold) 80%, var(--ink)) !important;
+  font-weight: 650;
+}
+.navsoon::after {
+  content: "Soon";
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+/* A gradient band for the top of /corner and /drops — distinct from the
+   plain page headers elsewhere, so landing on a preview feels like arriving
+   somewhere, not like scrolling past a half-finished section. */
+.teaser-hero {
+  border-radius: 20px;
+  padding: 28px 26px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--tint) 20%, var(--card)), var(--card) 75%);
+  border: 1px solid color-mix(in srgb, var(--tint) 35%, var(--line));
+}
+
+.countdown-chip {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .countdown-chip {
+    background: var(--sunk);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+}
+:root[data-theme="dark"] .countdown-chip {
+  background: var(--sunk);
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+/* A mystery drop shows the shape of a reward without the content — the
+   blur is the entire pitch, so it has to actually obscure something rather
+   than sit next to plain text that gives the game away. */
+.drop-mystery-veil {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  border-radius: 12px;
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--tint) 22%, var(--sunk)),
+    color-mix(in srgb, var(--tint) 22%, var(--sunk)) 10px,
+    color-mix(in srgb, var(--tint) 12%, var(--sunk)) 10px,
+    color-mix(in srgb, var(--tint) 12%, var(--sunk)) 20px
+  );
+  font-size: 26px;
+  font-weight: 800;
+  color: color-mix(in srgb, var(--tint) 60%, var(--ink));
+  filter: blur(0.3px);
+}
+
+/* The compact teaser row on the home page pointing at both modules. */
+.soon-row {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}

@@ -18,18 +18,28 @@ export const metadata: Metadata = {
 
 // The two sides of the product get different doors. A signed-out visitor
 // sees the customer set plus the way in for brands.
+//
+// Brand Corner and Drops are concept previews, not live features — they're
+// on every list because validating them needs both audiences to see them,
+// but they carry the "Soon" mark (below) rather than sitting among the
+// things that actually work today.
 const CUSTOMER_LINKS = [
   { href: "/", label: "Board" },
   { href: "/try", label: "Try it" },
   { href: "/wish", label: "Wishes" },
   { href: "/rewards", label: "My rewards" },
+  { href: "/corner", label: "Brand Corner" },
+  { href: "/drops", label: "Drops" },
 ];
 const MERCHANT_LINKS = [
   { href: "/", label: "Board" },
   { href: "/brand", label: "My tile" },
   { href: "/wish", label: "Wishes" },
+  { href: "/corner", label: "Brand Corner" },
+  { href: "/drops", label: "Drops" },
 ];
 const GUEST_LINKS = [...CUSTOMER_LINKS, { href: "/brand", label: "For brands" }];
+const SOON_HREFS = new Set(["/corner", "/drops"]);
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const user = await getSessionUser();
@@ -56,7 +66,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
                 key={l.href}
                 href={l.href}
                 className={`rounded-full px-3 py-1.5 text-[13px] text-ink-soft transition-colors hover:bg-sunk hover:text-ink${
-                  l.href === "/try" ? " navtry" : ""
+                  l.href === "/try" ? " navtry" : SOON_HREFS.has(l.href) ? " navsoon" : ""
                 }`}
               >
                 {l.label}
