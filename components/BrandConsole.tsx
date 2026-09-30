@@ -87,6 +87,7 @@ export function BrandConsole({
   position,
   voteCount,
   clicks,
+  listingFeePaise = LISTING_FEE_PAISE,
 }: {
   draft: BrandDraft;
   hasBrand: boolean;
@@ -98,6 +99,11 @@ export function BrandConsole({
   position: number | null;
   voteCount: number;
   clicks: number;
+  /** What THIS account actually pays — LISTING_FEE_PAISE for everyone
+   *  except the one address in lib/testFee.ts. The button shows the real
+   *  number rather than the public one, so it never charges something
+   *  different from what it says. */
+  listingFeePaise?: number;
 }) {
   const [form, setForm] = useState(draft);
   const [saving, setSaving] = useState(false);
@@ -587,7 +593,7 @@ export function BrandConsole({
               disabled={paying || !saved}
               className="btn btn-primary mt-5 w-full"
             >
-              {paying ? "Processing…" : `List for ${rupees(LISTING_FEE_PAISE)}`}
+              {paying ? "Processing…" : `List for ${rupees(listingFeePaise)}`}
             </button>
             {!saved && <p className="mt-2 text-[12.5px] text-warn">Save your listing before paying.</p>}
           </>

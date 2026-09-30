@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/session";
 import { getBoard, getBrandForUser } from "@/lib/board";
 import { razorpayConfigured } from "@/lib/razorpay";
 import { BOARD_SIZE, CATEGORIES, DEFAULT_REWARD_VALID_DAYS, LISTING_FEE_PAISE, rupees } from "@/lib/rules";
+import { listingFeeFor } from "@/lib/testFee";
 import { IconStore, IconTag } from "@/components/icons";
 import { BrandConsole, type BrandDraft } from "@/components/BrandConsole";
 import { BrandStatsPanel } from "@/components/BrandStats";
@@ -126,6 +127,9 @@ export default async function BrandPage() {
   const currentBid = owned?.brand.bidPaise ?? 0;
   const listed = currentBid > 0;
   const voteCount = listedEntry?.voteCount ?? 0;
+  // Almost always LISTING_FEE_PAISE — see lib/testFee.ts for the one
+  // narrow, env-gated exception used to test a real payment.
+  const myFeePaise = listingFeeFor(user.email);
 
   return (
     <div className="mx-auto max-w-[1080px] px-4 py-8 sm:px-6">
@@ -135,7 +139,7 @@ export default async function BrandPage() {
           Signed in as <span className="mono">{user.email}</span>.{" "}
           {listed
             ? "Your position moves with customer votes, not payment."
-            : `Listing costs a flat ${rupees(LISTING_FEE_PAISE)} — the same for every brand.`}
+            : `Listing costs a flat ${rupees(myFeePaise)}${myFeePaise === LISTING_FEE_PAISE ? " — the same for every brand." : "."}`}
         </p>
       </header>
 
@@ -162,6 +166,7 @@ export default async function BrandPage() {
         position={position}
         voteCount={voteCount}
         clicks={owned?.brand.clicks ?? 0}
+        listingFeePaise={myFeePaise}
       />
     </div>
   );

@@ -5,7 +5,7 @@ import { bids } from "@/lib/db/schema";
 import { getSessionUser } from "@/lib/session";
 import { getBrandForUser } from "@/lib/board";
 import { createOrder, razorpayConfigured, razorpayKeyId } from "@/lib/razorpay";
-import { LISTING_FEE_PAISE } from "@/lib/rules";
+import { listingFeeFor } from "@/lib/testFee";
 
 /**
  * Open an order for the listing fee.
@@ -14,7 +14,10 @@ import { LISTING_FEE_PAISE } from "@/lib/rules";
  * every brand, so unlike the old bidding flow this reads no amount from the
  * client at all — there's no number left for a tampered request to lie
  * about. The only thing this route decides is whether the brand is allowed
- * to pay right now.
+ * to pay right now, and what the fee actually is — which is
+ * `LISTING_FEE_PAISE` for everyone except the one address (if any) named in
+ * lib/testFee.ts, there to let a real payment be tested without committing
+ * the full fee.
  *
  * A brand pays exactly once. Position afterwards is earned in customer
  * votes, not bought again, so an already-listed brand has nothing to order.
@@ -32,7 +35,7 @@ export async function POST() {
     return NextResponse.json({ error: "You're already listed on the Board." }, { status: 400 });
   }
 
-  const amountPaise = LISTING_FEE_PAISE;
+  const amountPaise = listingFeeFor(user.email);
 
   const [bid] = await db
     .insert(bids)
